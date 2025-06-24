@@ -34,7 +34,7 @@
             @elseif($step == 1)
                 <div id="supplier-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Register as a Supplier</h2>
@@ -70,13 +70,12 @@
                         </div>
                     </div>
                 </div>
-                
 
             <!-- Supplier Registration Modal (Step 2) -->
             @elseif($step == 2)
                 <div id="supplier-step2-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Enter Your Mobile Number</h2>
@@ -110,7 +109,7 @@
             @elseif($step == 3)
                 <div id="supplier-step3-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Verify Your Mobile</h2>
@@ -120,23 +119,22 @@
                             </div>
                         </div>
                         <div class="modal-body">
-                            <p class="otp-message">We’ve sent a 6-digit code to your mobile. Please enter it below.</p>
+                            <p class="otp-message">We’ve sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
-                           <div class="otp-inputs" x-data>
-    @for ($i = 0; $i < 6; $i++)
-        <input type="text" class="otp-digit"
-               maxlength="1"
-               wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
-               wire:keydown.enter.prevent="submitStep3"
-               @keydown.tab.prevent="$wire.focusNext({{ $i }})"
-               @paste="$wire.handlePaste($event, {{ $i }})"
-               placeholder="0">
-    @endfor
-    @error('form.otp') <span class="error">{{ $message }}</span> @endif
-</div>
-
+                            <div class="otp-inputs" x-data>
+                                @for ($i = 0; $i < 4; $i++)
+                                    <input type="text" class="otp-digit"
+                                           maxlength="1"
+                                           wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
+                                           wire:keydown.enter.prevent="submitStep3"
+                                           @keydown.tab.prevent="$wire.focusNext({{ $i }})"
+                                           @paste="$wire.handlePaste($event, {{ $i }})"
+                                           placeholder="0">
+                                @endfor
+                                @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                            </div>
                             <div class="d-flex justify-content-center align-content-center my-2">
                                 <div id="recaptcha-container"></div>
                             </div>
@@ -150,7 +148,7 @@
             @elseif($step == 4)
                 <div id="supplier-step4-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Select Your Product Category</h2>
@@ -175,67 +173,67 @@
                 </div>
 
             <!-- Supplier Registration Modal (Step 5) - Additional Details -->
-           <!-- Supplier Registration Modal (Step 5) - Additional Details -->
-@elseif($step == 5)
-    <div id="supplier-step5-modal" class="modal-overlay" style="display: flex;">
-        <div class="modal-content">
-            <button wire:click="goBack" class="modal-close">×</button>
-            <button wire:click="goBack" class="modal-back"><</button>
-            <div class="modal-header">
-                <h2>Additional Details</h2>
-                <div class="step-indicator">Step 5</div>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" wire:model="form.latitude">
-                <input type="hidden" wire:model="form.longitude">
-                <div class="form-group">
-                    <input type="text" wire:model="form.name" placeholder="Name">
-                    @error('form.name') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <textarea wire:model="form.address" placeholder="Address" rows="3"></textarea>
-                    @error('form.address') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <input type="tel" wire:model="form.phone" placeholder="Phone">
-                    @error('form.phone') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <select wire:model="form.country" class="select2 form-control" id="country_select">
-                        <option value="">Select a country</option>
-                        @foreach($countries as $country)
-                            <option value="{{ $country->id }}" {{ $form['country'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
-                                {{ $country->name }} ({{ $country->iso2 }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('form.country') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <input type="password" wire:model="form.password" placeholder="Password">
-                    @error('form.password') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <input type="password" wire:model="form.password_confirmation" placeholder="Confirm Password">
-                    @error('form.password_confirmation') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <div class="terms-checkbox">
-                        <input type="checkbox" wire:model="form.terms">
-                        <span>I agree to the Terms and Conditions</span>
+            @elseif($step == 5)
+                <div id="supplier-step5-modal" class="modal-overlay" style="display: flex;">
+                    <div class="modal-content">
+                        <button wire:click="startWizard" class="modal-close">×</button>
+                        <button wire:click="goBack" class="modal-back"><</button>
+                        <div class="modal-header">
+                            <h2>Additional Details</h2>
+                            <div class="step-indicator">Step 5</div>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" wire:model="form.latitude">
+                            <input type=" Ascending
+                            <input type="hidden" wire:model="form.longitude">
+                            <div class="form-group">
+                                <input type="text" wire:model="form.name" placeholder="Name">
+                                @error('form.name') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <textarea wire:model="form.address" placeholder="Address" rows="3"></textarea>
+                                @error('form.address') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <input type="tel" wire:model="form.phone" placeholder="Phone">
+                                @error('form.phone') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <select wire:model="form.country" class="select2 form-control" id="country_select">
+                                    <option value="">Select a country</option>
+                                    @foreach($countries as $country)
+                                        <option value="{{ $country->id }}" {{ $form['country'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
+                                            {{ $country->name }} ({{ $country->iso2 }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('form.country') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <input type="password" wire:model="form.password" placeholder="Password">
+                                @error('form.password') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <input type="password" wire:model="form.password_confirmation" placeholder="Confirm Password">
+                                @error('form.password_confirmation') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <div class="terms-checkbox">
+                                    <input type="checkbox" wire:model="form.terms">
+                                    <span>I agree to the Terms and Conditions</span>
+                                </div>
+                                @error('form.terms') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <button wire:click="submitStep5" class="submit-btn">Submit</button>
+                        </div>
                     </div>
-                    @error('form.terms') <span class="error">{{ $message }}</span> @enderror
                 </div>
-                <button wire:click="submitStep5" class="submit-btn">Submit</button>
-            </div>
-        </div>
-    </div>
 
             <!-- Buyer Registration Modal (Step 6) -->
             @elseif($step == 6)
                 <div id="buyer-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <div class="modal-header">
                             <h2>Register as a Buyer</h2>
                             <div class="modal-icons">
@@ -271,7 +269,7 @@
             @elseif($step == 8)
                 <div id="buyer-step2-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Enter Shipping Details</h2>
@@ -310,7 +308,7 @@
             @elseif($step == 9)
                 <div id="buyer-step3-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="goBack" class="modal-close">×</button>
+                        <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Complete Registration</h2>
@@ -362,17 +360,13 @@
     </div>
 </div>
 <script defer>
-    
     document.addEventListener("livewire:load", () => {
-    // Listen for Livewire event to trigger focus change
-    Livewire.on('focusNext', (index) => {
-        debugger;
-        const otpBoxes = document.querySelectorAll(".otp-inputs .otp-digit");
-        if (otpBoxes[index]?.value && index < otpBoxes.length - 1) {
-            otpBoxes[index + 1].focus();
-        }
+        // Listen for Livewire event to trigger focus change
+        Livewire.on('focusNext', (index) => {
+            const otpBoxes = document.querySelectorAll(".otp-inputs .otp-digit");
+            if (otpBoxes[index]?.value && index < otpBoxes.length - 1) {
+                otpBoxes[index + 1].focus();
+            }
+        });
     });
-});
-
-
 </script>
