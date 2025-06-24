@@ -1,0 +1,1 @@
+Welcome To {{ $system_settings['app_name'] }}🎉

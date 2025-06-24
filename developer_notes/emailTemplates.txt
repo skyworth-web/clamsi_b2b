@@ -1,0 +1,4 @@
+1. Path: ../../.......  put all your email template here
+ - eg langName.blade.php and langName-subject.blade.php
+ - Note: When you are creating new template creation of default.blade.php and default-subject.blade.php is must.
+ 
