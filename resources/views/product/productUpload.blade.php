@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('content')
-<div class="container py-5">
+<div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-12">
+        <div class="col-lg-12 col-xl-12">
             <div class="card shadow">
                 <div class="card-body p-4">
                     <h3 class="mb-4">Supplier Product Upload A Setup</h3>
@@ -38,10 +38,10 @@
                             <div class="card border-0 bg-light mb-3">
                                 <div class="card-body">
                                     <div class="fw-bold mb-2">AI assistant</div>
-                                    <div class="mb-2">
+                                    <!-- <div class="mb-2">
                                         <button class="btn btn-outline-secondary btn-sm me-2" onclick="sortByStyle()">Sort By Style</button>
                                         <button class="btn btn-outline-secondary btn-sm" onclick="sortByCategoryAndStyle()">Sort By Category and per Style</button>
-                                    </div>
+                                    </div> -->
                                     <div class="mb-2">
                                         <button class="btn btn-warning btn-sm" onclick="tagProductCategory()">Tag Product Category Per Item</button>
                                     </div>
@@ -54,15 +54,19 @@
                                     </div>
                                     <div class="mb-3">
                                         <div class="fw-bold">Chat</div>
-                                        <textarea class="form-control mb-2" id="ai-chat-question" rows="5" placeholder="make questions about variants i.e. sizes to apply to all"></textarea>
-                                        <button class="btn btn-primary btn-sm" onclick="sendAIChat()">Send</button>
+                                        <div id="ai-chat-error" class="alert alert-danger d-none" role="alert"></div>
+                                        <div id="ai-chat-history" style="height:320px; overflow-y:auto; background:#fff; border:1px solid #eee; border-radius:6px; padding:10px; margin-bottom:10px;"></div>
+                                        <textarea class="form-control mb-2" id="ai-chat-question" rows="2" placeholder="make questions about variants i.e. sizes to apply to all"></textarea>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm" type="button" id="ai-chat-send-btn" onclick="sendAIChat()">Send</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end mt-4">
-                        <button class="btn btn-primary btn-lg">Save & Continue</button>
+                        <button class="btn btn-primary btn-md">Save & Continue</button>
                     </div>
                 </div>
             </div>
@@ -140,12 +144,97 @@ function sortByCategoryAndStyle() { alert('Sort By Category and per Style (AI lo
 function tagProductCategory() { alert('Tag Product Category Per Item (AI logic placeholder)'); }
 function organizeByStyle() { alert('Organize By Style (AI logic placeholder)'); }
 function startAISorting() { alert('Start AI Sorting (AI logic placeholder)'); }
+// --- AI Assistant AJAX Chat ---
+let aiChatHistory = [];
+
+function renderAIChatHistory() {
+    const historyDiv = document.getElementById('ai-chat-history');
+    historyDiv.innerHTML = '';
+    aiChatHistory.forEach(entry => {
+        if (entry.user && entry.user !== '[image]') {
+            historyDiv.innerHTML += `<div class='mb-1'><b>You:</b> ${escapeHtml(entry.user)}</div>`;
+        } else if (entry.user === '[image]') {
+            historyDiv.innerHTML += `<div class='mb-1'><b>You:</b> <i>Sent an image</i></div>`;
+        }
+        if (entry.ai) {
+            historyDiv.innerHTML += `<div class='mb-2'><b>AI:</b> ${escapeHtml(entry.ai)}` + (entry.category ? `<br/><span class='badge bg-info text-dark'>Category: ${escapeHtml(entry.category)}</span>` : '') + `</div>`;
+        }
+    });
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>"']/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c];
+    });
+}
+
 function sendAIChat() {
     const question = document.getElementById('ai-chat-question').value.trim();
-    if (question) {
-        alert('AI Chat: ' + question + ' (AI logic placeholder)');
-        document.getElementById('ai-chat-question').value = '';
-    }
+    if (!question) return;
+    const formData = new FormData();
+    formData.append('message', question);
+    formData.append('history', JSON.stringify(aiChatHistory));
+    // Disable send button
+    const sendBtn = document.getElementById('ai-chat-send-btn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    // Hide previous error
+    document.getElementById('ai-chat-error').classList.add('d-none');
+    fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            const errorDiv = document.getElementById('ai-chat-error');
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('d-none');
+        } else {
+            aiChatHistory = data.history || [];
+            renderAIChatHistory();
+            document.getElementById('ai-chat-question').value = '';
+        }
+    })
+    .catch(() => {
+        const errorDiv = document.getElementById('ai-chat-error');
+        errorDiv.textContent = 'Failed to contact AI.';
+        errorDiv.classList.remove('d-none');
+    })
+    .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+    });
 }
+
+// Remove image upload from chat area
+document.getElementById('ai-chat-image')?.remove();
+
+// Send message on Enter, newline on Shift+Enter
+const chatTextarea = document.getElementById('ai-chat-question');
+chatTextarea.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendAIChat();
+    }
+});
+
+// Initial render
+renderAIChatHistory();
+
+// Clear chat history on page load (local and server)
+aiChatHistory = [];
+renderAIChatHistory();
+fetch('/api/ai-chat/clear', {
+    method: 'POST',
+    headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+    }
+});
 </script>
 @endsection 

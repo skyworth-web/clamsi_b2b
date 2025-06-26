@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\App\v1\ApiController;
+use App\Http\Controllers\AIChatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -121,3 +122,6 @@ Route::group(['middleware' => ['check_token', 'auth:sanctum']], function () {
     // Route::get('get_paypal_link', [ApiController::class, 'get_paypal_link']);
     // Route::get('/paypal_transaction_webview', [ApiController::class, 'paypal_transaction_webview'])->name('paypal_transaction_webview');
 });
+
+Route::post('/ai-chat', [AIChatController::class, 'chat']);
+Route::post('/ai-chat/clear', [AIChatController::class, 'clearHistory']);
