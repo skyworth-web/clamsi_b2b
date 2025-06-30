@@ -9,6 +9,8 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AIChatController extends Controller
 {
@@ -28,12 +30,37 @@ class AIChatController extends Controller
         $excelRows = 0;
         // Handle image upload
         if ($request->hasFile('images')) {
+            // Log the current DB connection name
+            try {
+                $connectionName = DB::getDefaultConnection();
+                Log::info('Current DB connection:', ['connection' => $connectionName]);
+            } catch (\Exception $e) {
+                Log::error('Error fetching DB connection: ' . $e->getMessage());
+            }
+            // Check if products table exists
+            try {
+                $tableExists = Schema::hasTable('products');
+                Log::info('Products table exists:', ['exists' => $tableExists]);
+            } catch (\Exception $e) {
+                Log::error('Error checking products table existence: ' . $e->getMessage());
+            }
             $images = $request->file('images');
             foreach ($images as $image) {
+                // Ensure unique product name
+                $maxAttempts = 5;
+                $attempt = 0;
+                do {
+                    $uniqueName = 'Product_' . time() . '_' . Str::random(8);
+                    $exists = Product::where('name', $uniqueName)->exists();
+                    $attempt++;
+                } while ($exists && $attempt < $maxAttempts);
+                if ($exists) {
+                    Log::error('Failed to generate unique product name after ' . $maxAttempts . ' attempts.');
+                    continue; // Skip this image
+                }
                 $imagePath = $image->store('uploads/products');
-                $uniqueName = 'Product_' . time() . '_' . Str::random(8);
                 $product = Product::create([
-                    'name' => $uniqueName,
+                    'name' => json_encode($uniqueName),
                     'image' => $imagePath,
                     'status' => 0, // draft
                     'store_id' => 1, // default store
