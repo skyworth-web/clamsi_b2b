@@ -197,7 +197,6 @@ function renderImagePreviews() {
     plusBox.style.justifyContent = 'center';
     plusBox.style.background = '#fafafa';
     plusBox.style.cursor = 'pointer';
-    plusBox.innerHTML = `<span class='fs-1 text-secondary'>+</span>`;
     plusBox.onclick = triggerImageInput;
     grid.appendChild(plusBox);
     document.getElementById('upload-images-btn').style.display = window.selectedImages.length ? 'inline-block' : 'none';
@@ -208,14 +207,94 @@ window.removeImage = function(idx) {
 }
 window.submitImages = function() {
     if (!window.selectedImages.length) return;
-    alert(window.selectedImages.length + ' image(s) selected. (Placeholder for upload logic)');
+    const formData = new FormData();
+    window.selectedImages.forEach((file, idx) => {
+        formData.append('images[]', file);
+    });
+    formData.append('history', JSON.stringify(aiChatHistory));
+    // Optionally add a message or step indicator
+    formData.append('message', '[image upload]');
+    const sendBtn = document.getElementById('upload-images-btn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Uploading...';
+    fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            const errorDiv = document.getElementById('ai-chat-error');
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('d-none');
+        } else {
+            aiChatHistory = Array.isArray(data.history) ? data.history : [];
+            renderAIChatHistory();
+            window.selectedImages = [];
+            renderImagePreviews();
+        }
+    })
+    .catch((e) => {
+        const errorDiv = document.getElementById('ai-chat-error');
+        errorDiv.textContent = 'Failed to upload images.';
+        errorDiv.classList.remove('d-none');
+    })
+    .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Upload';
+    });
 }
 window.onload = renderImagePreviews;
 
 // --- Excel Upload Logic ---
+window.uploadExcelFile = function() {
+    const excelInput = document.getElementById('excel-upload');
+    const file = excelInput.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('excel', file);
+    formData.append('history', JSON.stringify(aiChatHistory));
+    formData.append('message', '[excel upload]');
+    const excelLabel = document.querySelector('label[for="excel-upload"]');
+    excelLabel.textContent = 'Uploading...';
+    fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            const errorDiv = document.getElementById('ai-chat-error');
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('d-none');
+        } else {
+            aiChatHistory = Array.isArray(data.history) ? data.history : [];
+            renderAIChatHistory();
+            document.getElementById('excel-file-name').textContent = 'No file selected';
+            excelInput.value = '';
+        }
+    })
+    .catch((e) => {
+        const errorDiv = document.getElementById('ai-chat-error');
+        errorDiv.textContent = 'Failed to upload Excel file.';
+        errorDiv.classList.remove('d-none');
+    })
+    .finally(() => {
+        excelLabel.textContent = 'Upload Excel (.xls, .xlsx)';
+    });
+}
 document.getElementById('excel-upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     document.getElementById('excel-file-name').textContent = file ? file.name : '';
+    if (file) {
+        window.uploadExcelFile();
+    }
 });
 
 // --- AI Assistant Placeholder Functions ---
