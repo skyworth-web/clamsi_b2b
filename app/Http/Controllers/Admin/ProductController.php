@@ -2098,6 +2098,18 @@ class ProductController extends Controller
     }
     
     public function uploadProduct() {
-        return view('product.productUpload');
+        $masterCategories = \App\Models\Category::where('status', 1)->where('parent_id', 0)->orderBy('name')->get();
+        foreach ($masterCategories as $master) {
+            $decoded = json_decode($master->name, true);
+            $master->name = $decoded['en'] ?? $master->name;
+            $subcategories = \App\Models\Category::where('status', 1)->where('parent_id', $master->id)->orderBy('name')->get();
+            foreach ($subcategories as $sub) {
+                $subDecoded = json_decode($sub->name, true);
+                $sub->name = $subDecoded['en'] ?? $sub->name;
+            }
+            // Always set subcategories, even if empty
+            $master->subcategories = $subcategories;
+        }
+        return view('product.productUpload', ['masterCategories' => $masterCategories]);
     }
 }

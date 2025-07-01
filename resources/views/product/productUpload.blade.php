@@ -32,9 +32,24 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="form-floating">
-                                        <textarea class="form-control border-0 bg-light" id="product-categories" name="product_categories" 
-                                            style="height: 120px; background-color: #dcfce7;" placeholder="Add categories"></textarea>
-                                        <label for="product-categories" style="color: #15803d;">Add default product categories</label>
+                                        <div class="d-flex flex-wrap gap-3">
+                                            @foreach($masterCategories as $master)
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-success dropdown-toggle" type="button" id="dropdownMenuButton-{{ $master->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        {{ $master->name }}
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $master->id }}">
+                                                        @if($master->subcategories->count())
+                                                            @foreach($master->subcategories as $sub)
+                                                                <li class="px-3 py-1 text-secondary">{{ $sub->name }}</li>
+                                                            @endforeach
+                                                        @else
+                                                            <li class="px-3 py-1 text-muted">No subcategories</li>
+                                                        @endif
+                                                    </ul>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
                                     <div class="form-text mt-2" style="color: #16a34a;">These categories will be used by AI to organize your products</div>
                                 </div>
@@ -436,6 +451,16 @@ fetch('/api/ai-chat/clear', {
     /* Image grid styling */
     #image-preview-grid {
         min-height: 160px;
+    }
+
+    .dropdown-menu {
+        min-width: 200px;
+    }
+    .dropdown-toggle::after {
+        margin-left: 0.5em;
+    }
+    .d-flex.flex-wrap.gap-3 > .dropdown {
+        margin-bottom: 0.5rem;
     }
 </style>
 @endsection
