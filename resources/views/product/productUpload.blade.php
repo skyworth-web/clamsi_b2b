@@ -21,9 +21,8 @@
                 <!-- Card Body -->
                 <div class="card-body p-4" style="background-color: #f0fdf4;">
                     <div class="row g-4">
-                        <!-- Left Column -->
-                        <div class="col-lg-6">
-                            <!-- Product Categories Section -->
+                        <!-- Product Categories Section -->
+                        <div class="col-lg-12">
                             <div class="card border-0 shadow-sm rounded-3 mb-4" style="box-shadow: 0 4px 12px rgba(134, 239, 172, 0.08);">
                                 <div class="card-header bg-white border-0 py-3">
                                     <h5 class="mb-0 fw-bold" style="color: #166534;">
@@ -54,7 +53,9 @@
                                     <div class="form-text mt-2" style="color: #16a34a;">These categories will be used by AI to organize your products</div>
                                 </div>
                             </div>
-
+                        </div>
+                        <!-- Left Column -->
+                        <div class="col-lg-6">
                             <!-- Image Upload Section -->
                             <div class="card border-0 shadow-sm rounded-3 mb-4" style="box-shadow: 0 4px 12px rgba(134, 239, 172, 0.08);">
                                 <div class="card-header bg-white border-0 py-3">
@@ -62,11 +63,10 @@
                                         <i class="bi bi-images me-2" style="color: #22c55e;"></i>Product Images
                                     </h5>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body product-images-card-body">
                                     <div id="image-preview-grid" class="d-flex flex-wrap gap-3 mb-4"></div>
-                                    
                                     <input type="file" id="image-files" name="image_files" class="d-none" accept="image/*" multiple />
-                                    <div class="d-flex gap-3">
+                                    <div class="d-flex gap-3 mt-auto">
                                         <button type="button" class="btn rounded-pill px-4 shadow-sm" onclick="triggerImageInput()" 
                                             style="background-color: white; color:rgb(86, 230, 139); border: 1px solid #86efac;">
                                             <i class="bi bi-upload me-2"></i>Add Images
@@ -85,16 +85,16 @@
                                         <i class="bi bi-file-earmark-excel me-2" style="color: #22c55e;"></i>Excel Upload for Prices & Stock
                                     </h5>
                                 </div>
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <input type="file" id="excel-upload" name="excel_upload" accept=".xls,.xlsx" class="d-none" />
-                                        <label for="excel-upload" class="btn rounded-pill px-4 flex-grow-1 shadow-sm" 
-                                            style="background-color: white; color: #22c55e; border: 1px solid #86efac;">
-                                            <i class="bi bi-upload me-2"></i>Upload Excel (.xls, .xlsx)
-                                        </label>
-                                    </div>
-                                    <div id="excel-file-name" class="mt-3 p-3 rounded-2 small" style="background-color: #dcfce7; color: #15803d;">
-                                        No file selected
+                                <div class="card-body excel-upload-card-body">
+                                    <input type="file" id="excel-upload" name="excel_upload" accept=".xls,.xlsx" class="d-none" />
+                                    <div class="d-flex gap-3 align-items-center mb-3">
+                                        <button type="button" class="btn rounded-pill px-4 shadow-sm" id="open-excel-btn" style="background-color: white; color: #22c55e; border: 1px solid #86efac;">
+                                            <i class="bi bi-folder2-open me-2"></i>Open Excel
+                                        </button>
+                                        <button type="button" class="btn rounded-pill px-4 shadow-sm" id="upload-excel-btn" style="background-color: #22c55e; color: white;" disabled>
+                                            <i class="bi bi-cloud-arrow-up me-2"></i>Upload
+                                        </button>
+                                        <span id="excel-file-name" class="ms-2 small text-success">No file selected</span>
                                     </div>
                                 </div>
                             </div>
@@ -108,7 +108,7 @@
                                         <i class="bi bi-robot me-2" style="color: #22c55e;"></i>AI Assistant
                                     </h5>
                                 </div>
-                                <div class="card-body d-flex flex-column" style="background-color: #dcfce7;">
+                                <div class="card-body d-flex flex-column ai-assistant-card-body" style="background-color: #dcfce7;">
                                     <!-- AI Tools -->
                                     <div class="mb-4">
                                         <button class="btn btn-sm rounded-pill mb-2 shadow-sm" onclick="tagProductCategory()" 
@@ -265,52 +265,63 @@ window.submitImages = function() {
 window.onload = renderImagePreviews;
 
 // --- Excel Upload Logic ---
-window.uploadExcelFile = function() {
+(function() {
     const excelInput = document.getElementById('excel-upload');
-    const file = excelInput.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('excel', file);
-    formData.append('history', JSON.stringify(aiChatHistory));
-    formData.append('message', '[excel upload]');
-    const excelLabel = document.querySelector('label[for="excel-upload"]');
-    excelLabel.textContent = 'Uploading...';
-    fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-        },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            const errorDiv = document.getElementById('ai-chat-error');
-            errorDiv.textContent = data.error;
-            errorDiv.classList.remove('d-none');
-        } else {
-            aiChatHistory = Array.isArray(data.history) ? data.history : [];
-            renderAIChatHistory();
-            document.getElementById('excel-file-name').textContent = 'No file selected';
-            excelInput.value = '';
-        }
-    })
-    .catch((e) => {
-        const errorDiv = document.getElementById('ai-chat-error');
-        errorDiv.textContent = 'Failed to upload Excel file.';
-        errorDiv.classList.remove('d-none');
-    })
-    .finally(() => {
-        excelLabel.textContent = 'Upload Excel (.xls, .xlsx)';
+    const openExcelBtn = document.getElementById('open-excel-btn');
+    const uploadExcelBtn = document.getElementById('upload-excel-btn');
+    const excelFileName = document.getElementById('excel-file-name');
+    let selectedExcelFile = null;
+
+    openExcelBtn.addEventListener('click', function() {
+        excelInput.click();
     });
-}
-document.getElementById('excel-upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    document.getElementById('excel-file-name').textContent = file ? file.name : '';
-    if (file) {
-        window.uploadExcelFile();
-    }
-});
+
+    excelInput.addEventListener('change', function(e) {
+        selectedExcelFile = e.target.files[0] || null;
+        excelFileName.textContent = selectedExcelFile ? selectedExcelFile.name : 'No file selected';
+        uploadExcelBtn.disabled = !selectedExcelFile;
+    });
+
+    uploadExcelBtn.addEventListener('click', function() {
+        if (!selectedExcelFile) return;
+        const formData = new FormData();
+        formData.append('excel', selectedExcelFile);
+        formData.append('history', JSON.stringify(window.aiChatHistory || []));
+        formData.append('message', '[excel upload]');
+        uploadExcelBtn.disabled = true;
+        uploadExcelBtn.textContent = 'Uploading...';
+        fetch('/api/ai-chat', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                const errorDiv = document.getElementById('ai-chat-error');
+                errorDiv.textContent = data.error;
+                errorDiv.classList.remove('d-none');
+            } else {
+                window.aiChatHistory = Array.isArray(data.history) ? data.history : [];
+                if (typeof renderAIChatHistory === 'function') renderAIChatHistory();
+                excelFileName.textContent = 'No file selected';
+                excelInput.value = '';
+                selectedExcelFile = null;
+            }
+        })
+        .catch((e) => {
+            const errorDiv = document.getElementById('ai-chat-error');
+            errorDiv.textContent = 'Failed to upload Excel file.';
+            errorDiv.classList.remove('d-none');
+        })
+        .finally(() => {
+            uploadExcelBtn.disabled = false;
+            uploadExcelBtn.textContent = 'Upload';
+        });
+    });
+})();
 
 // --- AI Assistant Placeholder Functions ---
 window.sortByStyle = function() { alert('Sort By Style (AI logic placeholder)'); }
@@ -416,6 +427,33 @@ fetch('/api/ai-chat/clear', {
 </script>
 
 <style>
+    :root {
+        --product-images-box-height: 420px;
+    }
+    .product-images-card-body {
+        min-height: var(--product-images-box-height);
+        height: var(--product-images-box-height);
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    #image-preview-grid {
+        flex: 1 1 auto;
+        min-height: 120px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    .excel-upload-card-body {
+        min-height: 100px;
+    }
+    .ai-assistant-card-body {
+        min-height: var(--product-images-box-height);
+        height: var(--product-images-box-height);
+        background-color: #dcfce7;
+        display: flex;
+        flex-direction: column;
+    }
     /* Custom Green Theme */
     .bg-green-50 { background-color:rgba(239, 250, 242, 0.87); }
     .bg-green-100 { background-color:rgb(232, 255, 240); }

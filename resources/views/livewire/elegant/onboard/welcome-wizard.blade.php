@@ -7,6 +7,7 @@
             <div class="main-text">Private B2B Fashion Platform</div>
             <div class="sub-text">Fashion Access, By Invitation Only</div>
             <button wire:click="startWizard" class="btn-primary">Get Started</button>
+            <button wire:click="startWizardLogin" class="btn-primary" style="margin-top: 15px; min-width: 120px;">Login</button>
         </div>
     </div>
 
@@ -20,6 +21,7 @@
             <!-- Step 0: Supplier/Buyer Selection -->
             @if($step == 0)
                 <div class="wizard-options">
+                    <button wire:click="closeWizard" class="modal-close">×</button>
                     <a href="#" wire:click="startSupplierRegistration" class="wizard-card supplier-card">
                         <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="For Suppliers" class="card-image">
                         <div class="card-text">For Suppliers</div>
@@ -352,6 +354,89 @@
                                 @error('form.password_confirmation') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <button wire:click="submitStep9" class="submit-btn">Complete Registration</button>
+                        </div>
+                    </div>
+                </div>
+                
+            @elseif($step == 10)
+            <div class="wizard-options">
+                    <button wire:click="closeWizard" class="modal-close">×</button>
+                    <a href="#" wire:click="startSupplierLogin" class="wizard-card supplier-card">
+                        <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="For Suppliers" class="card-image">
+                        <div class="card-text">Login For Suppliers</div>
+                    </a>
+                    <a href="/login" class="wizard-card buyer-card">
+                        <img src="{{ asset('storage/onboard/for_customers.png') }}" alt="For Buyers" class="card-image">
+                        <div class="card-text">Login For Buyers</div>
+                    </a>
+                </div>
+                
+            @elseif($step == 11)
+            <div id="login-supplier-modal" class="modal-overlay" style="display: flex;">
+                    <div class="modal-content">
+                        <button wire:click="startWizardLogin" class="modal-close">×</button>
+                        <div class="modal-header">
+                            <h2>Enter Your Mobile Number to Login</h2>
+                            <div class="step-indicator">Step 1</div>
+                            <div class="modal-icons">
+                                <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="Supplier Icons">
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <div class="mobile-input-wrapper">
+                                    <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
+                                        <option value="">Select country code</option>
+                                        @foreach($countries as $country)
+                                            <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
+                                                {{ $country->phonecode }} ({{ $country->name }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
+                                    @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                                @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <button wire:click="submitStep11" class="submit-btn">Send OTP</button>
+                        </div>
+                    </div>
+                </div>
+                
+            @elseif($step == 12)
+                 <div id="login-supplier-step2-modal" class="modal-overlay" style="display: flex;">
+                    <div class="modal-content">
+                        <button wire:click="startWizardLogin" class="modal-close">×</button>
+                        <button wire:click="goBack" class="modal-back"><</button>
+                        <div class="modal-header">
+                            <h2>Verify Your Mobile to Login</h2>
+                            <div class="step-indicator">Step 2</div>
+                            <div class="modal-icons">
+                                <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="Supplier Icons">
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <p class="otp-message">We’ve sent a 4-digit code to your mobile. Please enter it below.</p>
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
+                            <div class="otp-inputs" x-data>
+                                @for ($i = 0; $i < 4; $i++)
+                                    <input type="text" class="otp-digit"
+                                           maxlength="1"
+                                           wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
+                                           wire:keydown.enter.prevent="submitStep3"
+                                           @keydown.tab.prevent="$wire.focusNext({{ $i }})"
+                                           @paste="$wire.handlePaste($event, {{ $i }})"
+                                           placeholder="0">
+                                @endfor
+                                @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                            </div>
+                            <div class="d-flex justify-content-center align-content-center my-2">
+                                <div id="recaptcha-container"></div>
+                            </div>
+                            <button wire:click="submitStep12" class="submit-btn" id="verify_otp">Verify</button>
+                            <button wire:click="submitStep11" class="resend-btn">Resend OTP</button>
                         </div>
                     </div>
                 </div>
