@@ -374,7 +374,7 @@
             @elseif($step == 11)
             <div id="login-supplier-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
-                        <button wire:click="startWizardLogin" class="modal-close">×</button>
+                        <button wire:click="closeWizard" class="modal-close">×</button>
                         <div class="modal-header">
                             <h2>Enter Your Mobile Number to Login</h2>
                             <div class="step-indicator">Step 1</div>

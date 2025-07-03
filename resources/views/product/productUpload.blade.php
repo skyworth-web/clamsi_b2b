@@ -31,23 +31,41 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="form-floating">
-                                        <div class="d-flex flex-wrap gap-3">
+                                        <div class="d-flex flex-wrap gap-3 align-items-center">
                                             @foreach($masterCategories as $master)
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-success dropdown-toggle" type="button" id="dropdownMenuButton-{{ $master->id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        {{ $master->name }}
+                                                <div class="position-relative d-flex align-items-center">
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-outline-success dropdown-toggle" type="button" id="dropdownMenuButton-{{ $master->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            {{ $master->name }}
+                                                        </button>
+                                                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $master->id }}">
+                                                            @if($master->subcategories->count())
+                                                                @foreach($master->subcategories as $sub)
+                                                                    <li class="px-3 py-1 text-secondary d-flex align-items-center justify-content-between">
+                                                                        <span>{{ $sub->name }}</span>
+                                                                        <button class="btn btn-link p-0 ms-2 text-danger" title="Delete Subcategory" onclick="deleteCategory({{ $sub->id }})">
+                                                                            <i class="bi bi-x-lg"></i>
+                                                                        </button>
+                                                                    </li>
+                                                                @endforeach
+                                                            @else
+                                                                <li class="px-3 py-1 text-muted">No subcategories</li>
+                                                            @endif
+                                                            <li class="d-flex justify-content-end">
+                                                                <button class="btn btn-link p-0 text-success" title="Add Subcategory" onclick="showAddSubCategoryModal({{ $master->id }})">
+                                                                    <i class="bi bi-plus-lg"></i>
+                                                                </button>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <button class="btn btn-link p-0 ms-1 text-danger position-absolute top-0 end-0" style="transform: translate(50%,-50%);" title="Delete Category" onclick="deleteCategory({{ $master->id }})">
+                                                        <i class="bi bi-x-lg"></i>
                                                     </button>
-                                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $master->id }}">
-                                                        @if($master->subcategories->count())
-                                                            @foreach($master->subcategories as $sub)
-                                                                <li class="px-3 py-1 text-secondary">{{ $sub->name }}</li>
-                                                            @endforeach
-                                                        @else
-                                                            <li class="px-3 py-1 text-muted">No subcategories</li>
-                                                        @endif
-                                                    </ul>
                                                 </div>
                                             @endforeach
+                                            <button class="btn btn-link p-0 text-success ms-2" title="Add Master Category" onclick="showAddMasterCategoryModal()">
+                                                <i class="bi bi-plus-lg" style="font-size:1.5rem;"></i>
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="form-text mt-2" style="color: #16a34a;">These categories will be used by AI to organize your products</div>
@@ -423,6 +441,103 @@ fetch('/api/ai-chat/clear', {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
     }
 });
+
+// Category Modals and AJAX
+window.showAddMasterCategoryModal = function() {
+    var modal = new bootstrap.Modal(document.getElementById('addMasterCategoryModal'));
+    document.getElementById('addMasterCategoryForm').reset();
+    modal.show();
+}
+window.showAddSubCategoryModal = function(parentId) {
+    var modal = new bootstrap.Modal(document.getElementById('addSubCategoryModal'));
+    document.getElementById('addSubCategoryForm').reset();
+    document.getElementById('subCategoryParentId').value = parentId;
+    modal.show();
+}
+document.getElementById('addMasterCategoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    formData.append('parent_id', 0);
+    fetch('/categories', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.message || data.error);
+        } else {
+            location.reload();
+        }
+    });
+});
+document.getElementById('addSubCategoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    fetch('/categories', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.message || data.error);
+        } else {
+            location.reload();
+        }
+    });
+});
+window.deleteCategory = function(id) {
+    // Show modal instead of confirm
+    window.categoryToDelete = id;
+    document.getElementById('moveToCategory').value = '';
+    document.getElementById('deleteProductsCheck').checked = false;
+    document.getElementById('deleteCategoryError').style.display = 'none';
+    var modal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+    modal.show();
+}
+document.getElementById('confirmDeleteCategoryBtn').onclick = function() {
+    var id = window.categoryToDelete;
+    var moveTo = document.getElementById('moveToCategory').value;
+    var deleteProducts = document.getElementById('deleteProductsCheck').checked ? 1 : 0;
+    if (!moveTo && !deleteProducts) {
+        document.getElementById('deleteCategoryError').textContent = 'Please select a category to move products or choose to delete products.';
+        document.getElementById('deleteCategoryError').style.display = 'block';
+        return;
+    }
+    var formData = new FormData();
+    formData.append('category_id', id);
+    formData.append('move_to_category_id', moveTo);
+    formData.append('delete_products', deleteProducts);
+    fetch('/categories/delete-with-products', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('deleteCategoryError').textContent = data.error || data.message;
+            document.getElementById('deleteCategoryError').style.display = 'block';
+        } else {
+            location.reload();
+        }
+    })
+    .catch(() => {
+        document.getElementById('deleteCategoryError').textContent = 'Failed to delete category.';
+        document.getElementById('deleteCategoryError').style.display = 'block';
+    });
+};
 });
 </script>
 
@@ -501,4 +616,92 @@ fetch('/api/ai-chat/clear', {
         margin-bottom: 0.5rem;
     }
 </style>
+
+<!-- Delete/Move Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteCategoryModalLabel">Delete Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Do you want to move the products in this category to another category/subcategory, or delete them?</p>
+        <div class="mb-3">
+          <label for="moveToCategory" class="form-label">Move products to:</label>
+          <select class="form-select" id="moveToCategory">
+            <option value="">-- Select Category --</option>
+            @foreach($masterCategories as $master)
+              <option value="{{ $master->id }}">{{ $master->name }}</option>
+              @foreach($master->subcategories as $sub)
+                <option value="{{ $sub->id }}">&nbsp;&nbsp;{{ $sub->name }}</option>
+              @endforeach
+            @endforeach
+          </select>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="1" id="deleteProductsCheck">
+          <label class="form-check-label" for="deleteProductsCheck">
+            Delete all products in this category
+          </label>
+        </div>
+        <div id="deleteCategoryError" class="text-danger mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteCategoryBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Master Category Modal -->
+<div class="modal fade" id="addMasterCategoryModal" tabindex="-1" aria-labelledby="addMasterCategoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="addMasterCategoryForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addMasterCategoryModalLabel">Add Master Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="masterCategoryName" class="form-label">Category Name</label>
+            <input type="text" class="form-control" id="masterCategoryName" name="name" required>
+          </div>
+          <input type="hidden" name="parent_id" value="0">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Sub Category Modal -->
+<div class="modal fade" id="addSubCategoryModal" tabindex="-1" aria-labelledby="addSubCategoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="addSubCategoryForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addSubCategoryModalLabel">Add Subcategory</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="subCategoryName" class="form-label">Subcategory Name</label>
+            <input type="text" class="form-control" id="subCategoryName" name="name" required>
+          </div>
+          <input type="hidden" id="subCategoryParentId" name="parent_id" value="">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 @endsection

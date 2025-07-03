@@ -1024,4 +1024,44 @@ class CategoryController extends Controller
 
         return response()->json(['message' => 'Selected sliders deleted successfully.']);
     }
+
+    public function deleteWithProducts(Request $request)
+    {
+        $categoryId = $request->input('category_id');
+        $moveToCategoryId = $request->input('move_to_category_id');
+        $deleteProducts = $request->input('delete_products');
+
+        $category = Category::find($categoryId);
+        if (!$category) {
+            return response()->json(['error' => 'Category not found.']);
+        }
+
+        // Check for category slider association (optional, similar to destroy)
+        $isCategoryInSliders = \DB::table('category_sliders')
+            ->where('category_ids', 'LIKE', '%' . $categoryId . '%')
+            ->exists();
+        if ($isCategoryInSliders) {
+            return response()->json([
+                'error' => labels('admin_labels.cannot_delete_category_associated_with_sliders', 'You cannot delete this category because it is associated with category sliders.')
+            ]);
+        }
+
+        // Move or delete products
+        if ($deleteProducts) {
+            // Delete all products in this category
+            Product::where('category_id', $categoryId)->delete();
+        } elseif ($moveToCategoryId) {
+            // Move products to another category
+            Product::where('category_id', $categoryId)->update(['category_id' => $moveToCategoryId]);
+        } else {
+            return response()->json(['error' => 'No action selected for products.']);
+        }
+
+        // Delete the category
+        $category->delete();
+        return response()->json([
+            'error' => false,
+            'message' => labels('admin_labels.category_deleted_successfully', 'Category deleted successfully!')
+        ]);
+    }
 }

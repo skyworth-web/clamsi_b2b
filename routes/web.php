@@ -183,3 +183,6 @@ Route::post('admin/store', [StoreController::class, 'store'])->middleware(['demo
 Route::get("settings/registration", [SettingController::class, 'registration'])->name('admin.system_registration');
 Route::post("settings/system_registration", [SettingController::class, 'systemRegister'])->name('admin.system_register')->middleware(['demo_restriction']);
 Route::post("settings/web_system_registration", [SettingController::class, 'WebsystemRegister'])->name('admin.web_system_register')->middleware(['demo_restriction']);
+
+// Add this route for deleting/moving category with products
+Route::post('/categories/delete-with-products', [\App\Http\Controllers\Admin\CategoryController::class, 'deleteWithProducts']);
