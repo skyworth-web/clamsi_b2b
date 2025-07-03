@@ -29,6 +29,7 @@ class AIChatController extends Controller
         $productIds = [];
         $excelRows = 0;
         $categorizationResult = null;
+        $uploadedImages = [];
         // Handle image upload
         if ($request->hasFile('images')) {
             // Log the current DB connection name
@@ -75,6 +76,12 @@ class AIChatController extends Controller
                     'cod_allowed' => 1,
                 ]);
                 $productIds[] = $product->id;
+                // Add uploaded image info for frontend
+                $uploadedImages[] = [
+                    'id' => $product->id,
+                    'name' => $uniqueName,
+                    'url' => asset('storage/' . $imagePath),
+                ];
             }
             $fileSummary[] = count($images) . ' product images uploaded';
         }
@@ -241,6 +248,9 @@ class AIChatController extends Controller
         $data = [];
         if (!empty($productIds)) {
             $data['product_ids'] = $productIds;
+        }
+        if (!empty($uploadedImages)) {
+            $data['uploaded_images'] = $uploadedImages;
         }
         if ($excelRows) {
             $data['excel_rows'] = $excelRows;

@@ -187,6 +187,9 @@
 document.addEventListener('DOMContentLoaded', function() {
 // --- Image Upload Logic ---
 window.selectedImages = [];
+window.uploadBatches = [];
+window.currentBatchIndex = -1;
+
 window.triggerImageInput = function() {
     document.getElementById('image-files').click();
 }
@@ -204,8 +207,15 @@ function handleImageSelection(e) {
 function renderImagePreviews() {
     const grid = document.getElementById('image-preview-grid');
     grid.innerHTML = '';
-    window.selectedImages.forEach((file, idx) => {
-        const url = URL.createObjectURL(file);
+    // Show all images from all batches
+    let allFiles = [];
+    window.uploadBatches.forEach(batch => {
+        allFiles = allFiles.concat(batch.files || []);
+    });
+    // Add currently selected images (not yet uploaded)
+    allFiles = allFiles.concat(window.selectedImages);
+    allFiles.forEach((file, idx) => {
+        let url = file.url || (file instanceof File ? URL.createObjectURL(file) : '');
         const box = document.createElement('div');
         box.className = 'border rounded p-2 position-relative';
         box.style.width = '110px';
@@ -245,7 +255,6 @@ window.submitImages = function() {
         formData.append('images[]', file);
     });
     formData.append('history', JSON.stringify(aiChatHistory));
-    // Optionally add a message or step indicator
     formData.append('message', '[image upload]');
     const sendBtn = document.getElementById('upload-images-btn');
     sendBtn.disabled = true;
@@ -266,6 +275,18 @@ window.submitImages = function() {
         } else {
             aiChatHistory = Array.isArray(data.history) ? data.history : [];
             renderAIChatHistory();
+            // Store this upload batch
+            let batch = { files: [] };
+            if (data.data && data.data.uploaded_images) {
+                // If backend returns uploaded image info, use it
+                batch.files = data.data.uploaded_images.map(img => ({ url: img.url, id: img.id, name: img.name }));
+            } else {
+                // Fallback: use File objects (not persistent)
+                batch.files = window.selectedImages.map(f => ({ url: URL.createObjectURL(f), name: f.name }));
+            }
+            window.uploadBatches.push(batch);
+            window.currentBatchIndex = window.uploadBatches.length - 1;
+            // Do NOT clear uploaded images from preview
             window.selectedImages = [];
             renderImagePreviews();
         }
@@ -427,35 +448,42 @@ window.sendAIChat = function() {
     });
 }
 
-// AI Sorting and Tagging Functions
+// Helper to get the most recent batch for AI processing
+window.getCurrentUploadBatch = function() {
+    if (window.currentBatchIndex >= 0 && window.uploadBatches[window.currentBatchIndex]) {
+        return window.uploadBatches[window.currentBatchIndex].files;
+    }
+    return [];
+}
+
+// Update AI sorting/tagging functions to use current batch
 window.sortByStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    // Example: sort product boxes by style_tag
-    // You must have a way to map product_id to DOM elements
-    alert('Sort by style: ' + window.aiCategorizationResult.map(x => x.style_tag).join(', '));
-    // Implement your UI sorting logic here
+    const batch = window.getCurrentUploadBatch();
+    if (!batch.length) return alert('No images in current batch.');
+    alert('Sort by style for current batch: ' + batch.map(x => x.name || x.id).join(', '));
+    // Implement UI sorting for current batch
 }
 window.sortByCategoryAndStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    // Example: sort by category then style
-    alert('Sort by category and style.');
-    // Implement your UI sorting logic here
+    const batch = window.getCurrentUploadBatch();
+    if (!batch.length) return alert('No images in current batch.');
+    alert('Sort by category and style for current batch.');
+    // Implement UI sorting for current batch
 }
 window.tagProductCategory = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    // Example: show category tag on each product
-    window.aiCategorizationResult.forEach(function(item) {
-        // Find product DOM by item.product_id and add a tag
-        // For demo:
-        // alert('Product ' + item.product_id + ' -> Category ' + item.suggested_category_id);
-    });
-    alert('Tagged products with AI categories.');
+    const batch = window.getCurrentUploadBatch();
+    if (!batch.length) return alert('No images in current batch.');
+    alert('Tag product category for current batch.');
+    // Implement UI tagging for current batch
 }
 window.organizeByStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    // Example: group products visually by style
-    alert('Organize by style.');
-    // Implement your UI grouping logic here
+    const batch = window.getCurrentUploadBatch();
+    if (!batch.length) return alert('No images in current batch.');
+    alert('Organize by style for current batch.');
+    // Implement UI grouping for current batch
 }
 window.startAISorting = function() {
     // Send the special chat message to trigger auto-categorization
