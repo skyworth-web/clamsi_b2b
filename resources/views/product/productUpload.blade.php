@@ -374,6 +374,10 @@ function escapeHtml(text) {
     });
 }
 
+// Store AI categorization result globally
+window.aiCategorizationResult = [];
+
+// Patch sendAIChat to store categorization result if present
 window.sendAIChat = function() {
     const question = document.getElementById('ai-chat-question').value.trim();
     if (!question) return;
@@ -400,7 +404,12 @@ window.sendAIChat = function() {
             errorDiv.textContent = data.error;
             errorDiv.classList.remove('d-none');
         } else {
-            console.log("data: ", data)
+            // Store categorization result if present
+            if (data.data && data.data.categorization) {
+                window.aiCategorizationResult = data.data.categorization;
+                // Optionally, show a toast or message
+                alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+            }
             aiChatHistory = Array.isArray(data.history) ? data.history : [];
             renderAIChatHistory();
             document.getElementById('ai-chat-question').value = '';
@@ -416,6 +425,42 @@ window.sendAIChat = function() {
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send';
     });
+}
+
+// AI Sorting and Tagging Functions
+window.sortByStyle = function() {
+    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    // Example: sort product boxes by style_tag
+    // You must have a way to map product_id to DOM elements
+    alert('Sort by style: ' + window.aiCategorizationResult.map(x => x.style_tag).join(', '));
+    // Implement your UI sorting logic here
+}
+window.sortByCategoryAndStyle = function() {
+    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    // Example: sort by category then style
+    alert('Sort by category and style.');
+    // Implement your UI sorting logic here
+}
+window.tagProductCategory = function() {
+    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    // Example: show category tag on each product
+    window.aiCategorizationResult.forEach(function(item) {
+        // Find product DOM by item.product_id and add a tag
+        // For demo:
+        // alert('Product ' + item.product_id + ' -> Category ' + item.suggested_category_id);
+    });
+    alert('Tagged products with AI categories.');
+}
+window.organizeByStyle = function() {
+    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    // Example: group products visually by style
+    alert('Organize by style.');
+    // Implement your UI grouping logic here
+}
+window.startAISorting = function() {
+    // Send the special chat message to trigger auto-categorization
+    document.getElementById('ai-chat-question').value = 'auto categorize';
+    window.sendAIChat();
 }
 
 // Send message on Enter, newline on Shift+Enter

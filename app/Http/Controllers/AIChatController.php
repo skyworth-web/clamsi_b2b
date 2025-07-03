@@ -28,6 +28,7 @@ class AIChatController extends Controller
         $fileSummary = [];
         $productIds = [];
         $excelRows = 0;
+        $categorizationResult = null;
         // Handle image upload
         if ($request->hasFile('images')) {
             // Log the current DB connection name
@@ -83,6 +84,101 @@ class AIChatController extends Controller
             // For now, just note that Excel was uploaded without processing
             $fileSummary[] = 'Excel file uploaded (processing not yet implemented)';
             // TODO: Implement Excel processing when Maatwebsite\Excel is properly installed
+        }
+        // --- AI Auto-categorization logic ---
+        $autoCategorize = false;
+        if ($userMessage) {
+            $msg = strtolower($userMessage);
+            if (strpos($msg, 'auto categorize') !== false || strpos($msg, 'auto-categorize') !== false || strpos($msg, 'categorize products') !== false || strpos($msg, 'start ai sorting') !== false) {
+                $autoCategorize = true;
+            }
+        }
+        if ($autoCategorize) {
+            // Fetch products for this user/session (for demo, fetch all products with status=0 or 1)
+            $products = Product::whereIn('status', [0, 1])->get(['id', 'name', 'image', 'description']);
+            // Fetch categories
+            $categories = Category::all(['id', 'name']);
+            // Prepare product and category data for prompt
+            $productList = [];
+            foreach ($products as $p) {
+                $name = $p->name;
+                if (is_string($name)) {
+                    $decoded = json_decode($name, true);
+                    $name = is_array($decoded) ? ($decoded['en'] ?? reset($decoded)) : $name;
+                }
+                $productList[] = [
+                    'id' => $p->id,
+                    'name' => $name,
+                    'description' => $p->description,
+                ];
+            }
+            $categoryList = [];
+            foreach ($categories as $c) {
+                $name = $c->name;
+                if (is_string($name)) {
+                    $decoded = json_decode($name, true);
+                    $name = is_array($decoded) ? ($decoded['en'] ?? reset($decoded)) : $name;
+                }
+                $categoryList[] = [
+                    'id' => $c->id,
+                    'name' => $name,
+                ];
+            }
+            // Build prompt for ChatGPT
+            $prompt = "You are an AI assistant for an e-commerce platform. Given a list of products and categories, assign each product to the most appropriate category and suggest a style tag.\n";
+            $prompt .= "Return a JSON array: [{product_id, suggested_category_id, style_tag, reason}].\n";
+            $prompt .= "Products: " . json_encode($productList) . "\n";
+            $prompt .= "Categories: " . json_encode($categoryList) . "\n";
+            $prompt .= "If you are unsure, pick the closest category.\n";
+            // Call OpenAI API
+            $openaiApiKey = env('OPENAI_API_KEY');
+            $openaiResponse = \Http::withToken($openaiApiKey)
+                ->timeout(60)
+                ->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => 'gpt-4o',
+                    'messages' => [
+                        ['role' => 'system', 'content' => $prompt],
+                    ],
+                    'max_tokens' => 600,
+                    'response_format' => ['type' => 'json_object'],
+                ]);
+            $aiMessage = '';
+            $nextStep = '';
+            if ($openaiResponse->successful()) {
+                $result = $openaiResponse->json();
+                $content = $result['choices'][0]['message']['content'] ?? '';
+                $json = json_decode($content, true);
+                if (is_array($json) && isset($json[0]['product_id'])) {
+                    $categorizationResult = $json;
+                    $aiMessage = 'Here are the AI-categorized products. You can now sort or tag them as you wish.';
+                    $nextStep = 'show_categorization';
+                } else {
+                    $aiMessage = $content;
+                    $nextStep = '';
+                }
+            } else {
+                $aiMessage = 'Sorry, there was an error contacting the AI assistant.';
+                $nextStep = '';
+            }
+            // Append to history
+            if ($userMessage) {
+                $history[] = ['user' => $userMessage];
+            }
+            if ($aiMessage) {
+                $history[] = ['ai' => $aiMessage];
+            }
+            $data = [];
+            if ($categorizationResult) {
+                $data['categorization'] = $categorizationResult;
+            }
+            if ($nextStep) {
+                $data['next_step'] = $nextStep;
+            }
+            return response()->json([
+                'response' => $aiMessage,
+                'data' => $data,
+                'history' => $history,
+            ]);
         }
         // Build chat history string
         $historyStr = "";
