@@ -31,6 +31,10 @@ class AIChatController extends Controller
         $excelRows = 0;
         $categorizationResult = null;
         $uploadedImages = [];
+        $productIdsForCategorization = [];
+        if ($request->has('product_ids')) {
+            $productIdsForCategorization = json_decode($request->input('product_ids'), true) ?: [];
+        }
         // Handle image upload
         if ($request->hasFile('images')) {
             // Log the current DB connection name
@@ -103,8 +107,12 @@ class AIChatController extends Controller
             }
         }
         if ($autoCategorize) {
-            // Fetch products for this user/session (for demo, fetch all products with status=0 or 1)
-            $products = Product::whereIn('status', [0, 1])->get(['id', 'name', 'image', 'description']);
+            // Only fetch products in the batch if productIdsForCategorization is provided
+            if (!empty($productIdsForCategorization)) {
+                $products = Product::whereIn('id', $productIdsForCategorization)->get(['id', 'name', 'image', 'description']);
+            } else {
+                $products = Product::whereIn('status', [0, 1])->get(['id', 'name', 'image', 'description']);
+            }
             // Fetch categories
             $categories = Category::all(['id', 'name']);
             // Prepare product and category data for prompt

@@ -425,7 +425,7 @@
                                     <input type="text" class="otp-digit"
                                            maxlength="1"
                                            wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
-                                           wire:keydown.enter.prevent="submitStep3"
+                                           wire:keydown.enter.prevent="submitStep12"
                                            @keydown.tab.prevent="$wire.focusNext({{ $i }})"
                                            @paste="$wire.handlePaste($event, {{ $i }})"
                                            placeholder="0">

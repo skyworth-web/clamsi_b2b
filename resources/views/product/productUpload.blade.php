@@ -408,7 +408,76 @@ window.sortByStyle = function() { alert('Sort By Style (AI logic placeholder)');
 window.sortByCategoryAndStyle = function() { alert('Sort By Category and per Style (AI logic placeholder)'); }
 window.tagProductCategory = function() { alert('Tag Product Category Per Item (AI logic placeholder)'); }
 window.organizeByStyle = function() { alert('Organize By Style (AI logic placeholder)'); }
-window.startAISorting = function() { alert('Start AI Sorting (AI logic placeholder)'); }
+window.startAISorting = function() {
+    // Get current batch product IDs
+    const batch = window.getCurrentUploadBatch();
+    const productIds = batch.map(f => f.id).filter(Boolean);
+    const formData = new FormData();
+    formData.append('message', 'auto categorize');
+    formData.append('history', JSON.stringify(aiChatHistory));
+    formData.append('product_ids', JSON.stringify(productIds));
+    // Disable send button
+    const sendBtn = document.getElementById('ai-chat-send-btn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    // Hide previous error
+    document.getElementById('ai-chat-error').classList.add('d-none');
+    fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            const errorDiv = document.getElementById('ai-chat-error');
+            errorDiv.textContent = data.error;
+            errorDiv.classList.remove('d-none');
+        } else {
+            // Store categorization result if present
+            let foundCategorization = false;
+            if (data.data && data.data.categorization) {
+                window.aiCategorizationResult = data.data.categorization;
+                foundCategorization = true;
+                alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+            } else if (data.history && Array.isArray(data.history)) {
+                let lastAI = data.history.slice().reverse().find(h => h.ai && h.ai.trim().startsWith('{'));
+                if (lastAI) {
+                    try {
+                        let parsed = JSON.parse(lastAI.ai);
+                        if (parsed.results && Array.isArray(parsed.results)) {
+                            window.aiCategorizationResult = parsed.results;
+                            foundCategorization = true;
+                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        } else if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+                            window.aiCategorizationResult = parsed.suggestions;
+                            foundCategorization = true;
+                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!foundCategorization) {
+                window.aiCategorizationResult = [];
+            }
+            aiChatHistory = Array.isArray(data.history) ? data.history : [];
+            renderAIChatHistory();
+            document.getElementById('ai-chat-question').value = '';
+        }
+    })
+    .catch((e) => {
+        console.log("error:", e)
+        const errorDiv = document.getElementById('ai-chat-error');
+        errorDiv.textContent = 'Failed to contact AI.';
+        errorDiv.classList.remove('d-none');
+    })
+    .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+    });
+}
 
 // --- AI Assistant AJAX Chat ---
 let aiChatHistory = [];
@@ -482,6 +551,10 @@ window.sendAIChat = function() {
                             window.aiCategorizationResult = parsed.results;
                             foundCategorization = true;
                             alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        } else if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+                            window.aiCategorizationResult = parsed.suggestions;
+                            foundCategorization = true;
+                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
                         }
                     } catch (e) {}
                 }
@@ -516,6 +589,7 @@ window.getCurrentUploadBatch = function() {
 
 // Update AI sorting/tagging functions to use current batch
 window.sortByStyle = function() {
+    console.log('sortByStyle', window.aiCategorizationResult);
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
@@ -535,6 +609,7 @@ window.sortByStyle = function() {
     renderImagePreviews(true);
 }
 window.sortByCategoryAndStyle = function() {
+    console.log('sortByCategoryAndStyle', window.aiCategorizationResult);
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
@@ -570,11 +645,6 @@ window.organizeByStyle = function() {
     if (!batch.length) return alert('No images in current batch.');
     alert('Organize by style for current batch.');
     // Implement UI grouping for current batch
-}
-window.startAISorting = function() {
-    // Send the special chat message to trigger auto-categorization
-    document.getElementById('ai-chat-question').value = 'auto categorize';
-    window.sendAIChat();
 }
 
 // Send message on Enter, newline on Shift+Enter
