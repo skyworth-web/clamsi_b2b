@@ -193,8 +193,46 @@ class AIChatController extends Controller
                 $result = $openaiResponse->json();
                 $content = $result['choices'][0]['message']['content'] ?? '';
                 $json = json_decode($content, true);
+                // Handle direct array, { products: [...] }, and { results: [...] } structure
                 if (is_array($json) && isset($json[0]['product_id'])) {
                     $categorizationResult = $json;
+                } else if (is_array($json) && isset($json['products']) && is_array($json['products'])) {
+                    $categorizationResult = $json['products'];
+                } else if (is_array($json) && isset($json['results']) && is_array($json['results'])) {
+                    $categorizationResult = $json['results'];
+                } else if (is_array($json) && isset($json['product_id'])) {
+                    $categorizationResult = [$json];
+                }
+                if ($categorizationResult) {
+                    // Always process as array
+                    if (isset($categorizationResult['product_id'])) {
+                        $categorizationResult = [$categorizationResult];
+                    }
+                    // Update product category_id in DB
+                    foreach ($categorizationResult as $item) {
+                        if (isset($item['product_id']) && isset($item['suggested_category_id'])) {
+                            Product::where('id', $item['product_id'])->update([
+                                'category_id' => $item['suggested_category_id']
+                            ]);
+                        }
+                    }
+                    // Add category_name to each result
+                    $categoryMap = Category::pluck('name', 'id')->toArray();
+                    foreach ($categorizationResult as &$item) {
+                        if (isset($item['suggested_category_id'])) {
+                            $catId = $item['suggested_category_id'];
+                            $catName = isset($categoryMap[$catId]) ? $categoryMap[$catId] : $catId;
+                            // Decode JSON name if needed
+                            if (is_string($catName)) {
+                                $decoded = json_decode($catName, true);
+                                if (is_array($decoded)) {
+                                    $catName = $decoded['en'] ?? reset($decoded);
+                                }
+                            }
+                            $item['category_name'] = $catName;
+                        }
+                    }
+                    unset($item); // break reference
                     $aiMessage = 'Here are the AI-categorized products. You can now sort or tag them as you wish.';
                     $nextStep = 'show_categorization';
                 } else {

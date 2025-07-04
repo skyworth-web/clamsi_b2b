@@ -223,12 +223,16 @@ function renderImagePreviews(showTags = false) {
         // Only show current batch
         filesToShow = window.getCurrentUploadBatch();
         showCategorization = true;
-        // Build a map: name/id -> categorization
+        // Build a map: name/id/product_id -> categorization
         window.aiCategorizationResult.forEach(item => {
             if (item.name) categorizationMap[item.name] = item;
             if (item.id) categorizationMap[item.id] = item;
+            if (item.product_id) categorizationMap[item.product_id] = item;
         });
     }
+
+    console.log("========== aiCategorizationResult:\n", window.aiCategorizationResult);
+    console.log("========== categorizationMap:\n", categorizationMap);
 
     filesToShow.forEach((file, idx) => {
         let url = file.url || (file instanceof File ? URL.createObjectURL(file) : '');
@@ -243,14 +247,23 @@ function renderImagePreviews(showTags = false) {
         box.style.background = '#fafafa';
         let badgeHtml = '';
         if (showCategorization) {
-            // Try to match by name or id
-            let key = file.name || file.id;
+            // Try to match by product_id, id, or name
+            let key = file.product_id || file.id || file.name;
             let cat = categorizationMap[key];
             if (cat) {
-                let catBadge = cat.category ? `<span class='badge bg-info text-dark mt-1'>${escapeHtml(cat.category)}</span>` : '';
-                let styleBadge = cat.style ? `<span class='badge bg-warning text-dark mt-1'>${escapeHtml(cat.style)}</span>` : '';
-                badgeHtml = catBadge + (catBadge && styleBadge ? '<br/>' : '') + styleBadge;
-                if (!catBadge && !styleBadge) badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+                let categoryValue = cat.category_name || cat.category || cat.category_id || cat.suggested_category_id;
+                // If categoryValue is a JSON string, decode and get 'en' or first value
+                if (typeof categoryValue === 'string' && categoryValue.trim().startsWith('{')) {
+                    try {
+                        let decoded = JSON.parse(categoryValue);
+                        if (typeof decoded === 'object' && decoded !== null) {
+                            categoryValue = decoded['en'] || Object.values(decoded)[0] || categoryValue;
+                        }
+                    } catch (e) {}
+                }
+                let catBadge = categoryValue ? `<span class='badge bg-info text-dark mt-1'>${escapeHtml(categoryValue)}</span>` : '';
+                badgeHtml = catBadge;
+                if (!catBadge) badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
             } else {
                 badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
             }
@@ -447,13 +460,32 @@ window.startAISorting = function() {
                 if (lastAI) {
                     try {
                         let parsed = JSON.parse(lastAI.ai);
-                        if (parsed.results && Array.isArray(parsed.results)) {
+                        if (Array.isArray(parsed) && parsed[0] && parsed[0].product_id) {
+                            window.aiCategorizationResult = parsed;
+                            foundCategorization = true;
+                        } else if (parsed && parsed.product_id) {
+                            window.aiCategorizationResult = [parsed];
+                            foundCategorization = true;
+                        } else if (parsed.results && Array.isArray(parsed.results)) {
                             window.aiCategorizationResult = parsed.results;
                             foundCategorization = true;
-                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        } else if (parsed.results && parsed.results.product_id) {
+                            window.aiCategorizationResult = [parsed.results];
+                            foundCategorization = true;
                         } else if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
                             window.aiCategorizationResult = parsed.suggestions;
                             foundCategorization = true;
+                        } else if (parsed.suggestions && parsed.suggestions.product_id) {
+                            window.aiCategorizationResult = [parsed.suggestions];
+                            foundCategorization = true;
+                        } else if (parsed.products && Array.isArray(parsed.products)) {
+                            window.aiCategorizationResult = parsed.products;
+                            foundCategorization = true;
+                        } else if (parsed.products && parsed.products.product_id) {
+                            window.aiCategorizationResult = [parsed.products];
+                            foundCategorization = true;
+                        }
+                        if (foundCategorization) {
                             alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
                         }
                     } catch (e) {}
@@ -499,8 +531,8 @@ function renderAIChatHistory() {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/[&<>"']/g, function (c) {
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/[&<>"']/g, function (c) {
         return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c];
     });
 }
@@ -542,18 +574,36 @@ window.sendAIChat = function() {
                 foundCategorization = true;
                 alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
             } else if (data.history && Array.isArray(data.history)) {
-                // Look for a JSON object in the last AI message
                 let lastAI = data.history.slice().reverse().find(h => h.ai && h.ai.trim().startsWith('{'));
                 if (lastAI) {
                     try {
                         let parsed = JSON.parse(lastAI.ai);
-                        if (parsed.results && Array.isArray(parsed.results)) {
+                        if (Array.isArray(parsed) && parsed[0] && parsed[0].product_id) {
+                            window.aiCategorizationResult = parsed;
+                            foundCategorization = true;
+                        } else if (parsed && parsed.product_id) {
+                            window.aiCategorizationResult = [parsed];
+                            foundCategorization = true;
+                        } else if (parsed.results && Array.isArray(parsed.results)) {
                             window.aiCategorizationResult = parsed.results;
                             foundCategorization = true;
-                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        } else if (parsed.results && parsed.results.product_id) {
+                            window.aiCategorizationResult = [parsed.results];
+                            foundCategorization = true;
                         } else if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
                             window.aiCategorizationResult = parsed.suggestions;
                             foundCategorization = true;
+                        } else if (parsed.suggestions && parsed.suggestions.product_id) {
+                            window.aiCategorizationResult = [parsed.suggestions];
+                            foundCategorization = true;
+                        } else if (parsed.products && Array.isArray(parsed.products)) {
+                            window.aiCategorizationResult = parsed.products;
+                            foundCategorization = true;
+                        } else if (parsed.products && parsed.products.product_id) {
+                            window.aiCategorizationResult = [parsed.products];
+                            foundCategorization = true;
+                        }
+                        if (foundCategorization) {
                             alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
                         }
                     } catch (e) {}
