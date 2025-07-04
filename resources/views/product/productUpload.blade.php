@@ -204,7 +204,7 @@ function handleImageSelection(e) {
     renderImagePreviews();
     e.target.value = '';
 }
-function renderImagePreviews() {
+function renderImagePreviews(showTags = false) {
     const grid = document.getElementById('image-preview-grid');
     grid.innerHTML = '';
     // Show all images from all batches
@@ -214,35 +214,74 @@ function renderImagePreviews() {
     });
     // Add currently selected images (not yet uploaded)
     allFiles = allFiles.concat(window.selectedImages);
-    allFiles.forEach((file, idx) => {
+
+    // If tagging is enabled, only show current batch with tags
+    let filesToShow = allFiles;
+    let showCategorization = false;
+    let categorizationMap = {};
+    if (showTags && window.aiCategorizationResult && window.aiCategorizationResult.length) {
+        // Only show current batch
+        filesToShow = window.getCurrentUploadBatch();
+        showCategorization = true;
+        // Build a map: name/id -> categorization
+        window.aiCategorizationResult.forEach(item => {
+            if (item.name) categorizationMap[item.name] = item;
+            if (item.id) categorizationMap[item.id] = item;
+        });
+    }
+
+    filesToShow.forEach((file, idx) => {
         let url = file.url || (file instanceof File ? URL.createObjectURL(file) : '');
         const box = document.createElement('div');
         box.className = 'border rounded p-2 position-relative';
         box.style.width = '110px';
         box.style.height = '140px';
         box.style.display = 'flex';
+        box.style.flexDirection = 'column';
         box.style.alignItems = 'center';
         box.style.justifyContent = 'center';
         box.style.background = '#fafafa';
+        let badgeHtml = '';
+        if (showCategorization) {
+            // Try to match by name or id
+            let key = file.name || file.id;
+            let cat = categorizationMap[key];
+            if (cat) {
+                let catBadge = cat.category ? `<span class='badge bg-info text-dark mt-1'>${escapeHtml(cat.category)}</span>` : '';
+                let styleBadge = cat.style ? `<span class='badge bg-warning text-dark mt-1'>${escapeHtml(cat.style)}</span>` : '';
+                badgeHtml = catBadge + (catBadge && styleBadge ? '<br/>' : '') + styleBadge;
+                if (!catBadge && !styleBadge) badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+            } else {
+                badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+            }
+        }
         box.innerHTML = `
-            <img src='${url}' alt='Product ${idx+1}' style='max-width:100%; max-height:120px;' />
+            <img src='${url}' alt='Product ${idx+1}' style='max-width:100%; max-height:100px;' />
             <button type='button' class='btn btn-sm btn-danger position-absolute top-0 end-0 m-1' style='z-index:2;' onclick='removeImage(${idx})'>&times;</button>
+            ${badgeHtml}
         `;
         grid.appendChild(box);
     });
-    // Add "+" box
-    const plusBox = document.createElement('div');
-    plusBox.className = 'border rounded p-2';
-    plusBox.style.width = '110px';
-    plusBox.style.height = '140px';
-    plusBox.style.display = 'flex';
-    plusBox.style.alignItems = 'center';
-    plusBox.style.justifyContent = 'center';
-    plusBox.style.background = '#fafafa';
-    plusBox.style.cursor = 'pointer';
-    plusBox.onclick = triggerImageInput;
-    grid.appendChild(plusBox);
+    // Add "+" box only if not tagging
+    if (!showTags) {
+        const plusBox = document.createElement('div');
+        plusBox.className = 'border rounded p-2';
+        plusBox.style.width = '110px';
+        plusBox.style.height = '140px';
+        plusBox.style.display = 'flex';
+        plusBox.style.alignItems = 'center';
+        plusBox.style.justifyContent = 'center';
+        plusBox.style.background = '#fafafa';
+        plusBox.style.cursor = 'pointer';
+        plusBox.onclick = triggerImageInput;
+        grid.appendChild(plusBox);
+    }
     document.getElementById('upload-images-btn').style.display = window.selectedImages.length ? 'inline-block' : 'none';
+    // Show Reset button if tagging/sorting is active
+    const resetBtn = document.getElementById('reset-order-btn');
+    if (resetBtn) {
+        resetBtn.style.display = showTags ? 'inline-block' : 'none';
+    }
 }
 window.removeImage = function(idx) {
     window.selectedImages.splice(idx, 1);
@@ -284,6 +323,8 @@ window.submitImages = function() {
                 // Fallback: use File objects (not persistent)
                 batch.files = window.selectedImages.map(f => ({ url: URL.createObjectURL(f), name: f.name }));
             }
+            // Store original order for reset
+            batch.originalOrder = batch.files.map((f, i) => i);
             window.uploadBatches.push(batch);
             window.currentBatchIndex = window.uploadBatches.length - 1;
             // Do NOT clear uploaded images from preview
@@ -426,10 +467,27 @@ window.sendAIChat = function() {
             errorDiv.classList.remove('d-none');
         } else {
             // Store categorization result if present
+            let foundCategorization = false;
             if (data.data && data.data.categorization) {
                 window.aiCategorizationResult = data.data.categorization;
-                // Optionally, show a toast or message
+                foundCategorization = true;
                 alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+            } else if (data.history && Array.isArray(data.history)) {
+                // Look for a JSON object in the last AI message
+                let lastAI = data.history.slice().reverse().find(h => h.ai && h.ai.trim().startsWith('{'));
+                if (lastAI) {
+                    try {
+                        let parsed = JSON.parse(lastAI.ai);
+                        if (parsed.results && Array.isArray(parsed.results)) {
+                            window.aiCategorizationResult = parsed.results;
+                            foundCategorization = true;
+                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!foundCategorization) {
+                window.aiCategorizationResult = [];
             }
             aiChatHistory = Array.isArray(data.history) ? data.history : [];
             renderAIChatHistory();
@@ -459,24 +517,52 @@ window.getCurrentUploadBatch = function() {
 // Update AI sorting/tagging functions to use current batch
 window.sortByStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    const batch = window.getCurrentUploadBatch();
+    let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    alert('Sort by style for current batch: ' + batch.map(x => x.name || x.id).join(', '));
-    // Implement UI sorting for current batch
+    // Build a map: name/id -> style
+    let styleMap = {};
+    window.aiCategorizationResult.forEach(item => {
+        if (item.name) styleMap[item.name] = item.style || '';
+        if (item.id) styleMap[item.id] = item.style || '';
+    });
+    // Sort batch by style (alphabetically, unknown last)
+    batch.sort((a, b) => {
+        let styleA = styleMap[a.name || a.id] || 'zzz';
+        let styleB = styleMap[b.name || b.id] || 'zzz';
+        return styleA.localeCompare(styleB);
+    });
+    // Re-render with tags
+    renderImagePreviews(true);
 }
 window.sortByCategoryAndStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
-    const batch = window.getCurrentUploadBatch();
+    let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    alert('Sort by category and style for current batch.');
-    // Implement UI sorting for current batch
+    // Build a map: name/id -> {category, style}
+    let catMap = {};
+    window.aiCategorizationResult.forEach(item => {
+        if (item.name) catMap[item.name] = item;
+        if (item.id) catMap[item.id] = item;
+    });
+    // Sort batch by category, then style
+    batch.sort((a, b) => {
+        let ca = catMap[a.name || a.id] || {};
+        let cb = catMap[b.name || b.id] || {};
+        let catA = ca.category || 'zzz';
+        let catB = cb.category || 'zzz';
+        if (catA !== catB) return catA.localeCompare(catB);
+        let styleA = ca.style || 'zzz';
+        let styleB = cb.style || 'zzz';
+        return styleA.localeCompare(styleB);
+    });
+    renderImagePreviews(true);
 }
 window.tagProductCategory = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     const batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    alert('Tag product category for current batch.');
-    // Implement UI tagging for current batch
+    // Show tags for current batch
+    renderImagePreviews(true);
 }
 window.organizeByStyle = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
@@ -611,6 +697,33 @@ document.getElementById('confirmDeleteCategoryBtn').onclick = function() {
         document.getElementById('deleteCategoryError').style.display = 'block';
     });
 };
+
+// Add Reset button to the UI (after upload button)
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadBtn = document.getElementById('upload-images-btn');
+    if (uploadBtn && !document.getElementById('reset-order-btn')) {
+        const resetBtn = document.createElement('button');
+        resetBtn.id = 'reset-order-btn';
+        resetBtn.className = 'btn rounded-pill px-4 shadow-sm ms-2';
+        resetBtn.style.backgroundColor = '#fbbf24';
+        resetBtn.style.color = '#fff';
+        resetBtn.style.display = 'none';
+        resetBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-2"></i>Reset Order';
+        resetBtn.onclick = window.resetImageOrder;
+        uploadBtn.parentNode.appendChild(resetBtn);
+    }
+});
+
+window.resetImageOrder = function() {
+    // Restore original order for current batch
+    let idx = window.currentBatchIndex;
+    if (idx < 0 || !window.uploadBatches[idx]) return;
+    let batch = window.uploadBatches[idx];
+    if (!batch.originalOrder) return;
+    // Reorder files array to original order
+    batch.files = batch.originalOrder.map(i => batch.files[i]).filter(Boolean);
+    renderImagePreviews(true);
+}
 });
 </script>
 

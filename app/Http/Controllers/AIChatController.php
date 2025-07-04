@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Intervention\Image\Facades\Image;
 
 class AIChatController extends Controller
 {
@@ -60,7 +61,8 @@ class AIChatController extends Controller
                     Log::error('Failed to generate unique product name after ' . $maxAttempts . ' attempts.');
                     continue; // Skip this image
                 }
-                $imagePath = $image->store('uploads/products');
+                // Save image to public disk for web access
+                $imagePath = $image->store('uploads/products', 'public');
                 $product = Product::create([
                     'name' => json_encode($uniqueName),
                     'image' => $imagePath,
@@ -107,6 +109,7 @@ class AIChatController extends Controller
             $categories = Category::all(['id', 'name']);
             // Prepare product and category data for prompt
             $productList = [];
+            $imageMessages = [];
             foreach ($products as $p) {
                 $name = $p->name;
                 if (is_string($name)) {
@@ -118,6 +121,26 @@ class AIChatController extends Controller
                     'name' => $name,
                     'description' => $p->description,
                 ];
+                // Prepare image as base64 data URI (resize to max 512px width)
+                if ($p->image && Storage::disk('public')->exists($p->image)) {
+                    $imagePath = Storage::disk('public')->path($p->image);
+                    try {
+                        $img = Image::make($imagePath);
+                        if ($img->width() > 512) {
+                            $img->resize(512, null, function ($constraint) { $constraint->aspectRatio(); });
+                        }
+                        $encoded = (string) $img->encode('jpg', 80);
+                        $base64 = base64_encode($encoded);
+                        $dataUri = 'data:image/jpeg;base64,' . $base64;
+                        $imageMessages[] = [
+                            ['type' => 'text', 'text' => "Product ID: {$p->id}, Name: {$name}"],
+                            ['type' => 'image_url', 'image_url' => ['url' => $dataUri]],
+                        ];
+                    } catch (\Exception $e) {
+                        // Log error and skip image
+                        Log::error('Image processing failed for product ' . $p->id . ': ' . $e->getMessage());
+                    }
+                }
             }
             $categoryList = [];
             foreach ($categories as $c) {
@@ -134,18 +157,25 @@ class AIChatController extends Controller
             // Build prompt for ChatGPT
             $prompt = "You are an AI assistant for an e-commerce platform. Given a list of products and categories, assign each product to the most appropriate category and suggest a style tag.\n";
             $prompt .= "Return a JSON array: [{product_id, suggested_category_id, style_tag, reason}].\n";
-            $prompt .= "Products: " . json_encode($productList) . "\n";
             $prompt .= "Categories: " . json_encode($categoryList) . "\n";
             $prompt .= "If you are unsure, pick the closest category.\n";
+            // Compose OpenAI messages array
+            $messages = [
+                ['role' => 'system', 'content' => $prompt],
+            ];
+            // Add each product's image and info as a separate user message
+            foreach ($imageMessages as $msgGroup) {
+                foreach ($msgGroup as $msg) {
+                    $messages[] = ['role' => 'user', 'content' => [$msg]];
+                }
+            }
             // Call OpenAI API
             $openaiApiKey = env('OPENAI_API_KEY');
             $openaiResponse = \Http::withToken($openaiApiKey)
-                ->timeout(60)
+                ->timeout(120)
                 ->post('https://api.openai.com/v1/chat/completions', [
                     'model' => 'gpt-4o',
-                    'messages' => [
-                        ['role' => 'system', 'content' => $prompt],
-                    ],
+                    'messages' => $messages,
                     'max_tokens' => 600,
                     'response_format' => ['type' => 'json_object'],
                 ]);
