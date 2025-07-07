@@ -82,6 +82,12 @@
                                     </h5>
                                 </div>
                                 <div class="card-body product-images-card-body">
+                                    <div id="sort-status" class="mb-2" style="display: none;">
+                                        <small class="text-success">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <span id="sort-status-text">Images sorted by style</span>
+                                        </small>
+                                    </div>
                                     <div id="image-preview-grid" class="d-flex flex-wrap gap-3 mb-4"></div>
                                     <input type="file" id="image-files" name="image_files" class="d-none" accept="image/*" multiple />
                                     <div class="d-flex gap-3 mt-auto">
@@ -131,7 +137,7 @@
                                     <div class="mb-4">
                                         <button class="btn btn-sm rounded-pill mb-2 shadow-sm" onclick="tagProductCategory()" 
                                             style="background-color: white; color: #854d0e; border: 1px solid #86efac;">
-                                            <i class="bi bi-tag-fill me-1"></i>Tag Product Category Per Item
+                                            <i class="bi bi-tag-fill me-1"></i>Show Category & Style Tags
                                         </button>
                                         <div class="d-flex gap-2 mb-3">
                                             <button class="btn btn-sm rounded-pill shadow-sm" onclick="organizeByStyle()" 
@@ -219,27 +225,31 @@ function renderImagePreviews(showTags = false) {
     let filesToShow = allFiles;
     let showCategorization = false;
     let categorizationMap = {};
-    if (showTags && window.aiCategorizationResult && window.aiCategorizationResult.length) {
-        // Only show current batch
+    
+    // Check if we have AI categorization result (for sorting or tagging)
+    if (window.aiCategorizationResult && window.aiCategorizationResult.length) {
+        // Only show current batch when AI categorization is available
         filesToShow = window.getCurrentUploadBatch();
-        showCategorization = true;
-        // Build a map: name/id/product_id -> categorization
-        window.aiCategorizationResult.forEach(item => {
-            if (item.name) categorizationMap[item.name] = item;
-            if (item.id) categorizationMap[item.id] = item;
-            if (item.product_id) categorizationMap[item.product_id] = item;
-        });
+        
+        if (showTags) {
+            showCategorization = true;
+            // Build a map: name/id/product_id -> categorization
+            window.aiCategorizationResult.forEach(item => {
+                if (item.name) categorizationMap[item.name] = item;
+                if (item.id) categorizationMap[item.id] = item;
+                if (item.product_id) categorizationMap[item.product_id] = item;
+            });
+        }
     }
 
-    console.log("========== aiCategorizationResult:\n", window.aiCategorizationResult);
-    console.log("========== categorizationMap:\n", categorizationMap);
+
 
     filesToShow.forEach((file, idx) => {
         let url = file.url || (file instanceof File ? URL.createObjectURL(file) : '');
         const box = document.createElement('div');
         box.className = 'border rounded p-2 position-relative';
         box.style.width = '110px';
-        box.style.height = '140px';
+        box.style.height = '150px';
         box.style.display = 'flex';
         box.style.flexDirection = 'column';
         box.style.alignItems = 'center';
@@ -251,6 +261,7 @@ function renderImagePreviews(showTags = false) {
             let key = file.product_id || file.id || file.name;
             let cat = categorizationMap[key];
             if (cat) {
+                // Get category value
                 let categoryValue = cat.category_name || cat.category || cat.category_id || cat.suggested_category_id;
                 // If categoryValue is a JSON string, decode and get 'en' or first value
                 if (typeof categoryValue === 'string' && categoryValue.trim().startsWith('{')) {
@@ -261,9 +272,24 @@ function renderImagePreviews(showTags = false) {
                         }
                     } catch (e) {}
                 }
-                let catBadge = categoryValue ? `<span class='badge bg-info text-dark mt-1'>${escapeHtml(categoryValue)}</span>` : '';
-                badgeHtml = catBadge;
-                if (!catBadge) badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+                
+                // Get style value
+                let styleValue = cat.style_tag || cat.style || '';
+                
+                // Build badges HTML
+                let badges = [];
+                if (categoryValue) {
+                    badges.push(`<span class='badge bg-info text-dark mt-1 me-1'>${escapeHtml(categoryValue)}</span>`);
+                }
+                if (styleValue) {
+                    badges.push(`<span class='badge bg-warning text-dark mt-1'>${escapeHtml(styleValue)}</span>`);
+                }
+                
+                if (badges.length > 0) {
+                    badgeHtml = badges.join('');
+                } else {
+                    badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+                }
             } else {
                 badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
             }
@@ -275,12 +301,12 @@ function renderImagePreviews(showTags = false) {
         `;
         grid.appendChild(box);
     });
-    // Add "+" box only if not tagging
-    if (!showTags) {
+    // Add "+" box only if not tagging and not in sorting mode
+    if (!showTags && !(window.aiCategorizationResult && window.aiCategorizationResult.length)) {
         const plusBox = document.createElement('div');
         plusBox.className = 'border rounded p-2';
         plusBox.style.width = '110px';
-        plusBox.style.height = '140px';
+        plusBox.style.height = '150px';
         plusBox.style.display = 'flex';
         plusBox.style.alignItems = 'center';
         plusBox.style.justifyContent = 'center';
@@ -293,7 +319,7 @@ function renderImagePreviews(showTags = false) {
     // Show Reset button if tagging/sorting is active
     const resetBtn = document.getElementById('reset-order-btn');
     if (resetBtn) {
-        resetBtn.style.display = showTags ? 'inline-block' : 'none';
+        resetBtn.style.display = (showTags || (window.aiCategorizationResult && window.aiCategorizationResult.length)) ? 'inline-block' : 'none';
     }
 }
 window.removeImage = function(idx) {
@@ -416,11 +442,7 @@ window.onload = renderImagePreviews;
     });
 })();
 
-// --- AI Assistant Placeholder Functions ---
-window.sortByStyle = function() { alert('Sort By Style (AI logic placeholder)'); }
-window.sortByCategoryAndStyle = function() { alert('Sort By Category and per Style (AI logic placeholder)'); }
-window.tagProductCategory = function() { alert('Tag Product Category Per Item (AI logic placeholder)'); }
-window.organizeByStyle = function() { alert('Organize By Style (AI logic placeholder)'); }
+// --- AI Assistant Functions ---
 window.startAISorting = function() {
     // Get current batch product IDs
     const batch = window.getCurrentUploadBatch();
@@ -639,27 +661,46 @@ window.getCurrentUploadBatch = function() {
 
 // Update AI sorting/tagging functions to use current batch
 window.sortByStyle = function() {
-    console.log('sortByStyle', window.aiCategorizationResult);
+
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Build a map: name/id -> style
+    // Debugging: log aiCategorizationResult and batch
+    console.log('aiCategorizationResult:', window.aiCategorizationResult);
+    window.aiCategorizationResult.forEach((item, idx) => {
+        if (idx < 5) console.log('aiCategorizationResult item', idx, item);
+    });
+    console.log('batch:', batch);
+    batch.forEach((img, idx) => {
+        if (idx < 5) console.log('batch img', idx, img);
+    });
+    // Build a map: product_id/name/id -> style
     let styleMap = {};
     window.aiCategorizationResult.forEach(item => {
-        if (item.name) styleMap[item.name] = item.style || '';
-        if (item.id) styleMap[item.id] = item.style || '';
+        if (item.product_id) styleMap[item.product_id] = item.style_tag || item.style || '';
+        if (item.name) styleMap[item.name] = item.style_tag || item.style || '';
+        if (item.id) styleMap[item.id] = item.style_tag || item.style || '';
+    });
+    // Debugging logs
+    console.log('--- DEBUG: sortByStyle ---');
+    console.log('styleMap:', styleMap);
+    batch.forEach((img, idx) => {
+        console.log(`img[${idx}]:`, img, 'style:', styleMap[img.id]);
     });
     // Sort batch by style (alphabetically, unknown last)
     batch.sort((a, b) => {
-        let styleA = styleMap[a.name || a.id] || 'zzz';
-        let styleB = styleMap[b.name || b.id] || 'zzz';
+        let styleA = styleMap[a.id] || 'zzz';
+        let styleB = styleMap[b.id] || 'zzz';
         return styleA.localeCompare(styleB);
     });
-    // Re-render with tags
+    // Show sorting status
+    document.getElementById('sort-status-text').textContent = 'Images sorted by style';
+    document.getElementById('sort-status').style.display = 'block';
+    console.log('batch after sort:', batch);
+    // Re-render without tags (just reorder images)
     renderImagePreviews(true);
 }
 window.sortByCategoryAndStyle = function() {
-    console.log('sortByCategoryAndStyle', window.aiCategorizationResult);
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
@@ -676,17 +717,21 @@ window.sortByCategoryAndStyle = function() {
         let catA = ca.category || 'zzz';
         let catB = cb.category || 'zzz';
         if (catA !== catB) return catA.localeCompare(catB);
-        let styleA = ca.style || 'zzz';
-        let styleB = cb.style || 'zzz';
+        let styleA = ca.style_tag || ca.style || 'zzz';
+        let styleB = cb.style_tag || cb.style || 'zzz';
         return styleA.localeCompare(styleB);
     });
-    renderImagePreviews(true);
+    // Show sorting status
+    document.getElementById('sort-status-text').textContent = 'Images sorted by category and style';
+    document.getElementById('sort-status').style.display = 'block';
+    // Re-render without tags (just reorder images)
+    renderImagePreviews(false);
 }
 window.tagProductCategory = function() {
     if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
     const batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Show tags for current batch
+    // Show category and style tags for current batch
     renderImagePreviews(true);
 }
 window.organizeByStyle = function() {
@@ -842,6 +887,8 @@ window.resetImageOrder = function() {
     if (!batch.originalOrder) return;
     // Reorder files array to original order
     batch.files = batch.originalOrder.map(i => batch.files[i]).filter(Boolean);
+    // Hide sorting status
+    document.getElementById('sort-status').style.display = 'none';
     renderImagePreviews(true);
 }
 });
@@ -920,6 +967,26 @@ window.resetImageOrder = function() {
     }
     .d-flex.flex-wrap.gap-3 > .dropdown {
         margin-bottom: 0.5rem;
+    }
+    
+    /* Product tag badges styling */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+    }
+    
+    /* Ensure proper spacing between multiple badges */
+    .badge + .badge {
+        margin-left: 0.25rem;
+    }
+    
+    /* Make image boxes slightly taller to accommodate multiple badges */
+    #image-preview-grid .border.rounded {
+        height: 150px !important;
     }
 </style>
 

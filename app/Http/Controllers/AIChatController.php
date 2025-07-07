@@ -192,7 +192,9 @@ class AIChatController extends Controller
             if ($openaiResponse->successful()) {
                 $result = $openaiResponse->json();
                 $content = $result['choices'][0]['message']['content'] ?? '';
+                Log::info('OpenAI response content:', ['content' => $content]);
                 $json = json_decode($content, true);
+                Log::info('Parsed JSON:', ['json' => $json]);
                 // Handle direct array, { products: [...] }, and { results: [...] } structure
                 if (is_array($json) && isset($json[0]['product_id'])) {
                     $categorizationResult = $json;
@@ -252,6 +254,7 @@ class AIChatController extends Controller
             }
             $data = [];
             if ($categorizationResult) {
+                Log::info('Final categorization result:', ['categorization' => $categorizationResult]);
                 $data['categorization'] = $categorizationResult;
             }
             if ($nextStep) {
