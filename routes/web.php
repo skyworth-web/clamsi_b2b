@@ -186,3 +186,9 @@ Route::post("settings/web_system_registration", [SettingController::class, 'Webs
 
 // Add this route for deleting/moving category with products
 Route::post('/categories/delete-with-products', [\App\Http\Controllers\Admin\CategoryController::class, 'deleteWithProducts']);
+
+// Add this route for reordering categories (for product upload UI drag-and-drop)
+Route::post('/categories/reorder', [\App\Http\Controllers\CategoryController::class, 'reorder'])->name('categories.reorder');
+
+// Add this route for creating categories (for product upload UI)
+Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('categories.store');

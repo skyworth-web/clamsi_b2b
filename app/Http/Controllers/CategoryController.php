@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
@@ -109,5 +111,58 @@ class CategoryController extends Controller
         }
 
         return $formattedCategories;
+    }
+
+    /**
+     * Reorder master categories or subcategories.
+     * Expects: order (array of IDs), parent_id (0 for master, or master category ID for subcategories)
+     */
+    public function reorder(Request $request)
+    {
+        $order = $request->input('order', []);
+        $parentId = $request->input('parent_id', 0);
+        if (!is_array($order) || count($order) === 0) {
+            return response()->json(['success' => false, 'error' => 'Invalid order array.']);
+        }
+        // Update row_order for each category in the order array
+        foreach ($order as $idx => $catId) {
+            $cat = Category::where('id', $catId)->where('parent_id', $parentId == 0 ? 0 : $parentId)->first();
+            if ($cat) {
+                $cat->row_order = $idx;
+                $cat->save();
+            }
+        }
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Store a new category (for AJAX calls from product upload UI)
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'parent_id' => 'nullable|integer',
+        ]);
+
+        $store_id = getStoreId();
+        if (empty($store_id)) {
+            return response()->json(['success' => false, 'error' => 'No store ID found in session.'], 400);
+        }
+
+        $slug = Str::slug($request->name);
+
+        $category = new \App\Models\Category();
+        $category->name = $request->name;
+        $category->parent_id = $request->parent_id ?? 0;
+        $category->status = 1;
+        $category->store_id = $store_id;
+        $category->slug = $slug;
+        $category->save();
+
+        return response()->json([
+            'success' => true,
+            'category' => $category
+        ]);
     }
 }

@@ -2098,7 +2098,7 @@ class ProductController extends Controller
     }
     
     public function uploadProduct() {
-        $masterCategories = \App\Models\Category::where('status', 1)->where('parent_id', 0)->orderBy('name')->get();
+        $masterCategories = \App\Models\Category::where('status', 1)->where('parent_id', 0)->orderBy('row_order')->get();
         foreach ($masterCategories as $master) {
             $decoded = json_decode($master->name, true);
             $master->name = $decoded['en'] ?? $master->name;

@@ -31,17 +31,21 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="form-floating">
-                                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                                        <div class="master-categories-scroll">
+                                            <div id="master-categories-list" class="d-flex flex-row gap-3 align-items-center" style="position:relative;">
                                             @foreach($masterCategories as $master)
-                                                <div class="position-relative d-flex align-items-center">
+                                                    <div class="position-relative d-flex align-items-center master-category-item" data-id="{{ $master->id }}">
+                                                        <span class="drag-handle me-2" style="cursor:grab;">
+                                                            <i class="bi bi-grip-vertical"></i>
+                                                        </span>
                                                     <div class="dropdown">
-                                                        <button class="btn btn-outline-success dropdown-toggle" type="button" id="dropdownMenuButton-{{ $master->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <button class="btn btn-outline-success dropdown-toggle" type="button" id="dropdownMenuButton-{{ $master->id }}" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
                                                             {{ $master->name }}
                                                         </button>
-                                                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $master->id }}">
+                                                            <ul class="dropdown-menu subcategories-list" data-master-id="{{ $master->id }}">
                                                             @if($master->subcategories->count())
                                                                 @foreach($master->subcategories as $sub)
-                                                                    <li class="px-3 py-1 text-secondary d-flex align-items-center justify-content-between">
+                                                                        <li class="px-3 py-1 text-secondary d-flex align-items-center justify-content-between subcategory-item" data-id="{{ $sub->id }}">
                                                                         <span>{{ $sub->name }}</span>
                                                                         <button class="btn btn-link p-0 ms-2 text-danger" title="Delete Subcategory" onclick="deleteCategory({{ $sub->id }})">
                                                                             <i class="bi bi-x-lg"></i>
@@ -66,6 +70,7 @@
                                             <button class="btn btn-link p-0 text-success ms-2" title="Add Master Category" onclick="showAddMasterCategoryModal()">
                                                 <i class="bi bi-plus-lg" style="font-size:1.5rem;"></i>
                                             </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-text mt-2" style="color: #16a34a;">These categories will be used by AI to organize your products</div>
@@ -189,6 +194,7 @@
 </div>
 
 <!-- JavaScript Section - COMPLETELY UNCHANGED from original -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 // --- Image Upload Logic ---
@@ -891,6 +897,61 @@ window.resetImageOrder = function() {
     document.getElementById('sort-status').style.display = 'none';
     renderImagePreviews(true);
 }
+
+// Master categories drag-and-drop
+if (document.getElementById('master-categories-list')) {
+    new Sortable(document.getElementById('master-categories-list'), {
+        animation: 150,
+        handle: '.drag-handle',
+        draggable: '.master-category-item',
+        filter: 'button, .btn, .dropdown-menu, .dropdown-toggle',
+        onEnd: function (evt) {
+            let order = [];
+            document.querySelectorAll('.master-category-item').forEach((el, idx) => {
+                order.push(el.getAttribute('data-id'));
+            });
+            // Send order to backend
+            updateCategoryOrder(order, 0); // 0 = master categories
+        }
+    });
+}
+// Subcategories drag-and-drop
+document.querySelectorAll('.subcategories-list').forEach(function(ul) {
+    new Sortable(ul, {
+        animation: 150,
+        handle: '.subcategory-item',
+        draggable: '.subcategory-item',
+        filter: 'button, .btn',
+        onEnd: function (evt) {
+            let masterId = ul.getAttribute('data-master-id');
+            let order = [];
+            ul.querySelectorAll('.subcategory-item').forEach((el, idx) => {
+                order.push(el.getAttribute('data-id'));
+            });
+            // Send order to backend
+            updateCategoryOrder(order, masterId);
+        }
+    });
+});
+// AJAX function to update order
+window.updateCategoryOrder = function(order, parentId) {
+    fetch('/categories/reorder', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ order: order, parent_id: parentId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Optionally show a success message
+        } else {
+            alert(data.error || 'Failed to update order');
+        }
+    });
+}
 });
 </script>
 
@@ -983,11 +1044,90 @@ window.resetImageOrder = function() {
     .badge + .badge {
         margin-left: 0.25rem;
     }
-    
+    /* Fix for dropdown menu positioning */
+.master-categories-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible !important;
+    padding-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+#master-categories-list {
+    min-height: 48px;
+    position: relative;
+}
+
+#master-categories-list .dropdown-menu {
+    z-index: 1050;
+    position: absolute;
+    max-height: 300px;
+    overflow-y: auto;
+    top: 100%;
+    left: 0;
+    margin-top: 0.125rem;
+}
+
+/* Ensure the dropdown isn't constrained by parent overflows */
+.product-images-card-body,
+.excel-upload-card-body,
+.ai-assistant-card-body {
+    overflow: visible !important;
+}
+
+/* Fix for dropdown in scrollable container */
+.dropdown {
+    position: static !important; /* This allows the dropdown to break out of scroll container */
+}
+
+.dropdown-menu {
+    position: absolute !important;
+    z-index: 1050 !important; /* Higher than container */
+    max-height: 300px;
+    overflow-y: auto;
+    top: 100% !important;
+    left: 0 !important;
+    transform: none !important;
+    margin-top: 0.125rem;
+    will-change: transform; /* Optimize for animation */
+}
     /* Make image boxes slightly taller to accommodate multiple badges */
     #image-preview-grid .border.rounded {
         height: 150px !important;
     }
+
+    #master-categories-list .dropdown-menu {
+        z-index: 2000;
+    }
+
+    css
+/* Fix for dropdown menu positioning */
+.master-categories-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 8px;
+    position: relative;
+}
+.card-body,
+.master-categories-scroll,
+#master-categories-list {
+    overflow: visible !important;
+}
+#master-categories-list {
+    min-height: 48px;
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+    #master-categories-list .dropdown-menu {
+        z-index: 2000;
+    }
+    .master-category-item {
+    transform: none !important;
+}
 </style>
 
 <!-- Delete/Move Category Modal -->
