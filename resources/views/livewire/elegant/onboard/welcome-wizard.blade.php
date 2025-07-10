@@ -141,7 +141,26 @@
                                 <div id="recaptcha-container"></div>
                             </div>
                             <button wire:click="submitStep3" class="submit-btn" id="verify_otp">Verify</button>
-                            <button wire:click="submitStep2" class="resend-btn">Resend OTP</button>
+                            <div x-data="{ resendTimeout: @entangle('otpResendTimeout'), sentAt: @entangle('otpSentAt'), now: Date.now()/1000, timer: 0, interval: null }"
+                                 x-init="
+                                    if (sentAt) {
+                                        timer = resendTimeout - (Math.floor(now) - Math.floor(new Date(sentAt).getTime()/1000));
+                                        if (timer > 0) {
+                                            interval = setInterval(() => {
+                                                timer--;
+                                                if (timer <= 0) clearInterval(interval);
+                                            }, 1000);
+                                        } else {
+                                            timer = 0;
+                                        }
+                                    }
+                                 "
+                                 class="my-2">
+                                <button wire:click="submitStep2" class="resend-btn" :disabled="timer > 0">Resend OTP <span x-show="timer > 0">in <span x-text="timer"></span>s</span></button>
+                            </div>
+                            <div class="text-danger mt-2" x-show="$wire.otpTries >= 5">
+                                Too many attempts. Please resend OTP.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -184,32 +203,56 @@
                             <h2>Additional Details</h2>
                             <div class="step-indicator">Step 5</div>
                         </div>
-                        <div class="modal-body">
-                            <input type="hidden" wire:model="form.latitude">
-                            <input type=" Ascending
-                            <input type="hidden" wire:model="form.longitude">
+                        <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                            <div class="summary-panel" style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <h4>Summary</h4>
+                                <div><strong>Business Name:</strong> {{ $form['business_name'] }}</div>
+                                <div><strong>Email:</strong> {{ $form['email'] }}</div>
+                                <div><strong>Country:</strong> {{ optional($countries->firstWhere('id', $form['country']))->name }}</div>
+                                <div><strong>Product Categories:</strong> 
+                                    @foreach($categories as $category)
+                                        @if(is_array($form['categories']) && in_array($category->id, $form['categories']))
+                                            <span>{{ $category->display_name }}</span>@if(!$loop->last), @endif
+                                        @endif
+                                    @endforeach
+
+                                </div>
+                                <div><strong>Website:</strong> {{ $form['website'] ?: '-' }}</div>
+                            </div>
+                            <!-- Only show editable fields for this step below -->
                             <div class="form-group">
-                                <input type="text" wire:model="form.name" placeholder="Name">
+                                <label>Full Name</label>
+                                <input type="text" wire:model="form.name" placeholder="Full Name">
                                 @error('form.name') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
+                                <label>Address</label>
                                 <textarea wire:model="form.address" placeholder="Address" rows="3"></textarea>
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
-                                <input type="tel" wire:model="form.phone" placeholder="Phone">
-                                @error('form.phone') <span class="error">{{ $message }}</span> @enderror
+                                <label>ZIP Code</label>
+                                <input type="text" wire:model="form.zip_code" placeholder="ZIP Code">
+                                @error('form.zip_code') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <div class="form-group">
-                                <select wire:model="form.country" class="select2 form-control" id="country_select">
-                                    <option value="">Select a country</option>
+                            <div class="mobile-input-wrapper">
+                                <label>Mobile Number</label>
+                                <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
+                                    <option value="">Select country code</option>
                                     @foreach($countries as $country)
-                                        <option value="{{ $country->id }}" {{ $form['country'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
-                                            {{ $country->name }} ({{ $country->iso2 }})
+                                        <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
+                                            {{ $country->phonecode }} ({{ $country->name }})
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('form.country') <span class="error">{{ $message }}</span> @enderror
+                                <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
+                                @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
+                            <div class="form-group">
+                                <label>Website (optional)</label>
+                                <input type="text" wire:model="form.website" placeholder="Website (optional)">
+                                @error('form.website') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
                                 <input type="password" wire:model="form.password" placeholder="Password">
@@ -282,10 +325,23 @@
                                 <input type="text" wire:model="form.address" placeholder="Address">
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <div class="form-group">
-                                <input type="tel" wire:model="form.phone" placeholder="Phone">
-                                @error('form.phone') <span class="error">{{ $message }}</span> @enderror
-                            </div>
+                            
+                                <div class="mobile-input-wrapper">
+                                    <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
+                                        <option value="">Select country code</option>
+                                        @foreach($countries as $country)
+                                            <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
+                                                {{ $country->phonecode }} ({{ $country->name }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
+                                    @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                                @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
+                            
+                            
+                            
                             <div class="form-group">
                                 <input type="text" wire:model="form.zip_code" placeholder="ZIP Code">
                                 @error('form.zip_code') <span class="error">{{ $message }}</span> @enderror
@@ -315,36 +371,52 @@
                         <div class="modal-header">
                             <h2>Complete Registration</h2>
                         </div>
-                        <div class="modal-body">
-                            <input type="hidden" wire:model="form.latitude">
-                            <input type="hidden" wire:model="form.longitude">
+                        <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+                            <div class="summary-panel" style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <h4>Summary</h4>
+                                <div><strong>Company Name:</strong> {{ $form['company_name'] ?: '-' }}</div>
+                                <div><strong>Preferred Supplier Countries:</strong>
+                                    @foreach($countries as $country)
+                                        @if(is_array($form['preferred_supplier_countries']) && in_array($country->id, $form['preferred_supplier_countries']))
+                                            <span>{{ $country->name }}</span>@if(!$loop->last), @endif
+                                        @endif
+                                    @endforeach
+                                </div>
+                                <div><strong>Country:</strong> {{ optional($countries->firstWhere('id', $form['country']))->name }}</div>
+                                <div><strong>Product Categories:</strong>
+                                    @foreach($categories as $category)
+                                        @if(is_array($form['categories']) && in_array($category->id, $form['categories']))
+                                            <span>{{ $category->display_name }}</span>@if(!$loop->last), @endif
+                                        @endif
+                                    @endforeach
+                                </div>
+                                <div><strong>Website:</strong> {{ $form['website'] ?: '-' }}</div>
+                            </div>
+                            <!-- Only show editable fields for this step below -->
                             <div class="form-group">
+                                <label>Full Name</label>
                                 <input type="text" wire:model="form.name" placeholder="Full Name">
                                 @error('form.name') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
-                                <input type="text" wire:model="form.address" placeholder="Address">
+                                <label>Address (optional)</label>
+                                <input type="text" wire:model="form.address" placeholder="Address (optional)">
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <div class="form-group">
-                                <input type="tel" wire:model="form.phone" placeholder="Phone">
-                                @error('form.phone') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
-                                <input type="text" wire:model="form.zip_code" placeholder="Zip Code">
-                                @error('form.zip_code') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
-                                <select wire:model="form.country" class="select2 form-control" id="buyer_final_country_select">
-                                    <option value="">Select a country</option>
+                            <div class="mobile-input-wrapper">
+                                <label>Mobile Number</label>
+                                <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
+                                    <option value="">Select country code</option>
                                     @foreach($countries as $country)
-                                        <option value="{{ $country->id }}" {{ $form['country'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
-                                            {{ $country->name }} ({{ $country->iso2 }})
+                                        <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
+                                            {{ $country->phonecode }} ({{ $country->name }})
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('form.country') <span class="error">{{ $message }}</span> @enderror
+                                <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
+                                @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
                             </div>
+                            @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                             <div class="form-group">
                                 <input type="password" wire:model="form.password" placeholder="Password">
                                 @error('form.password') <span class="error">{{ $message }}</span> @enderror
@@ -352,6 +424,13 @@
                             <div class="form-group">
                                 <input type="password" wire:model="form.password_confirmation" placeholder="Confirm Password">
                                 @error('form.password_confirmation') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <div class="terms-checkbox">
+                                    <input type="checkbox" wire:model="form.terms">
+                                    <span>I agree to the Terms and Conditions</span>
+                                </div>
+                                @error('form.terms') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <button wire:click="submitStep9" class="submit-btn">Complete Registration</button>
                         </div>
@@ -436,7 +515,26 @@
                                 <div id="recaptcha-container"></div>
                             </div>
                             <button wire:click="submitStep12" class="submit-btn" id="verify_otp">Verify</button>
-                            <button wire:click="submitStep11" class="resend-btn">Resend OTP</button>
+                            <div x-data="{ resendTimeout: @entangle('otpResendTimeout'), sentAt: @entangle('otpSentAt'), now: Date.now()/1000, timer: 0, interval: null }"
+                                 x-init="
+                                    if (sentAt) {
+                                        timer = resendTimeout - (Math.floor(now) - Math.floor(new Date(sentAt).getTime()/1000));
+                                        if (timer > 0) {
+                                            interval = setInterval(() => {
+                                                timer--;
+                                                if (timer <= 0) clearInterval(interval);
+                                            }, 1000);
+                                        } else {
+                                            timer = 0;
+                                        }
+                                    }
+                                 "
+                                 class="my-2">
+                                <button wire:click="submitStep11" class="resend-btn" :disabled="timer > 0">Resend OTP <span x-show="timer > 0">in <span x-text="timer"></span>s</span></button>
+                            </div>
+                            <div class="text-danger mt-2" x-show="$wire.otpTries >= 5">
+                                Too many attempts. Please resend OTP.
+                            </div>
                         </div>
                     </div>
                 </div>
