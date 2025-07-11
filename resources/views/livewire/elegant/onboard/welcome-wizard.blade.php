@@ -106,7 +106,12 @@
                                 </div>
                                 @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <button wire:click="submitStep2" class="submit-btn">Send OTP</button>
+                            @if($otpVerified && $otpVerifiedMobile === ('+' . ltrim($form['country_code'], '+') . $form['mobile_number']))
+                                <div class="alert alert-success">Mobile already verified!</div>
+                                <button wire:click="nextAfterOtpSupplier" class="submit-btn">Next</button>
+                            @else
+                                <button wire:click="submitStep2" class="submit-btn">Send OTP</button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -125,7 +130,7 @@
                             </div>
                         </div>
                         <div class="modal-body">
-                            <p class="otp-message">We’ve sent a 4-digit code to your mobile. Please enter it below.</p>
+                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
@@ -338,7 +343,7 @@
                             </div>
                         </div>
                         <div class="modal-body">
-                            <p class="otp-message">We’ve sent a 4-digit code to your mobile. Please enter it below.</p>
+                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
