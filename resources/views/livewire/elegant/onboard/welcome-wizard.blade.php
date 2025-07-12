@@ -242,7 +242,7 @@
                             <div class="form-group">
                                 <div class="terms-checkbox">
                                     <input id="terms" type="checkbox" wire:model="form.terms">
-                                    <label for="terms">I agree to the Terms and Conditions</label>
+                                    <label for="terms">I agree to the <a href="{{ route('term_and_conditions') }}" target="_blank" class="text-primary">Terms and Conditions</a></label>
                                 </div>
                                 @error('form.terms') <span class="error">{{ $message }}</span> @enderror
                             </div>
@@ -439,7 +439,7 @@
                             <div class="form-group">
                                 <div class="terms-checkbox">
                                     <input id="terms" type="checkbox" wire:model="form.terms">
-                                    <label for="terms">I agree to the Terms and Conditions</label>
+                                    <label for="terms">I agree to the <a href="{{ route('term_and_conditions') }}" target="_blank" class="text-primary">Terms and Conditions</a></label>
                                 </div>
                                 @error('form.terms') <span class="error">{{ $message }}</span> @enderror
                             </div>

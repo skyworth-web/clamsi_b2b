@@ -127,7 +127,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/my-account/support/add-ticket', [Support::class, 'add_ticket'])->name('my-account.support.add-ticket');
     Route::post('/my-account/support/get-ticket', [Support::class, 'get_ticket_by_id'])->name('my-account.support.get-ticket');
 
-    Route::get('/login/logout', [UserController::class, 'logout'])->name('logout');
+    Route::get('/login/logout', [UserController::class, 'web_logout'])->name('logout');
 });
 Route::middleware(['guest'])->group(function () {
     //register & login

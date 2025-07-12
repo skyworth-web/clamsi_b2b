@@ -197,6 +197,16 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function web_logout()
+    {
+        Auth::logout();
+        return redirect('/onboard')->withHeaders([
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
 
     public function transactions_list($user_id = '', $type = '', $transaction_type = '')
     {
