@@ -26,7 +26,7 @@
                         <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="For Suppliers" class="card-image">
                         <div class="card-text">For Suppliers</div>
                     </a>
-                    <a href="#" wire:click="startBuyerRegistration" class="wizard-card buyer-card" onclick="openModal('buyer-modal')">
+                    <a href="#" wire:click="startBuyerRegistration" class="wizard-card buyer-card">
                         <img src="{{ asset('storage/onboard/for_customers.png') }}" alt="For Buyers" class="card-image">
                         <div class="card-text">For Buyers</div>
                     </a>
@@ -448,29 +448,12 @@
                     </div>
                 </div>
                 
-            @elseif($step == 11)
-            <div class="wizard-options">
-                    <button wire:click="closeWizard" class="modal-close">×</button>
-                    <a href="#" wire:click="startSupplierLogin" class="wizard-card supplier-card">
-                        <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="For Suppliers" class="card-image">
-                        <div class="card-text">Login For Suppliers</div>
-                    </a>
-                    <a href="/login" class="wizard-card buyer-card">
-                        <img src="{{ asset('storage/onboard/for_customers.png') }}" alt="For Buyers" class="card-image">
-                        <div class="card-text">Login For Buyers</div>
-                    </a>
-                </div>
-                
-            @elseif($step == 12)
-            <div id="login-supplier-modal" class="modal-overlay" style="display: flex;">
+            @elseif($step == 'login')
+                <div id="login-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content">
                         <button wire:click="closeWizard" class="modal-close">×</button>
                         <div class="modal-header">
-                            <h2>Enter Your Mobile Number to Login</h2>
-                            <div class="step-indicator">Step 1</div>
-                            <div class="modal-icons">
-                                <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="Supplier Icons">
-                            </div>
+                            <h2>Login with Mobile Number</h2>
                         </div>
                         <div class="modal-body">
                             <div class="form-group">
@@ -488,64 +471,30 @@
                                 </div>
                                 @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <button wire:click="submitStep11" class="submit-btn">Send OTP</button>
-                        </div>
-                    </div>
-                </div>
-                
-            @elseif($step == 13)
-                 <div id="login-supplier-step2-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
-                        <button wire:click="startWizardLogin" class="modal-close">×</button>
-                        <button wire:click="goBack" class="modal-back"><</button>
-                        <div class="modal-header">
-                            <h2>Verify Your Mobile to Login</h2>
-                            <div class="step-indicator">Step 2</div>
-                            <div class="modal-icons">
-                                <img src="{{ asset('storage/onboard/for_supplies.png') }}" alt="Supplier Icons">
-                            </div>
-                        </div>
-                        <div class="modal-body">
-                            <p class="otp-message">We’ve sent a 4-digit code to your mobile. Please enter it below.</p>
-                            @if($errorMessage)
-                                <div class="error-message">{{ $errorMessage }}</div>
-                            @endif
+                            @if($otpSent)
+                                <div class="form-group">
+                                    <label>Enter OTP</label>
                             <div class="otp-inputs" x-data>
                                 @for ($i = 0; $i < 4; $i++)
                                     <input type="text" class="otp-digit"
                                            maxlength="1"
                                            wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
-                                           wire:keydown.enter.prevent="submitStep12"
+                                                   wire:keydown.enter.prevent="verifyLoginOtp"
                                            @keydown.tab.prevent="$wire.focusNext({{ $i }})"
                                            @paste="$wire.handlePaste($event, {{ $i }})"
                                            placeholder="0">
                                 @endfor
-                                @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                                        @error('form.otp') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                            <div class="d-flex justify-content-center align-content-center my-2">
-                                <div id="recaptcha-container"></div>
                             </div>
-                            <button wire:click="submitStep12" class="submit-btn" id="verify_otp">Verify</button>
-                            <div x-data="{ resendTimeout: @entangle('otpResendTimeout'), sentAt: @entangle('otpSentAt'), now: Date.now()/1000, timer: 0, interval: null }"
-                                 x-init="
-                                    if (sentAt) {
-                                        timer = resendTimeout - (Math.floor(now) - Math.floor(new Date(sentAt).getTime()/1000));
-                                        if (timer > 0) {
-                                            interval = setInterval(() => {
-                                                timer--;
-                                                if (timer <= 0) clearInterval(interval);
-                                            }, 1000);
-                                        } else {
-                                            timer = 0;
-                                        }
-                                    }
-                                 "
-                                 class="my-2">
-                                <button wire:click="submitStep11" class="resend-btn" :disabled="timer > 0">Resend OTP <span x-show="timer > 0">in <span x-text="timer"></span>s</span></button>
-                            </div>
-                            <div class="text-danger mt-2" x-show="$wire.otpTries >= 5">
-                                Too many attempts. Please resend OTP.
-                            </div>
+                                <button wire:click="verifyLoginOtp" class="submit-btn" id="verify_otp">Verify</button>
+                                <button wire:click="sendLoginOtp" class="resend-btn mt-2">Resend OTP</button>
+                            @else
+                                <button wire:click="sendLoginOtp" class="submit-btn">Send OTP</button>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message mt-2">{{ $errorMessage }}</div>
+                            @endif
                         </div>
                     </div>
                 </div>
