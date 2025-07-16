@@ -179,7 +179,7 @@
                                             <li><a href="{{ customUrl('my-account/wallet') }}" wire:navigate><i
                                                         class="anm anm-pay-security hdr-icon icon"></i>{{ labels('front_messages.wallet', 'Wallet') }}</a>
                                             </li>
-                                            <li><a class="logout"><i
+                                            <li><a href="{{ route('logout') }}"><i
                                                         class="anm anm-arrow-al-left hdr-icon icon"></i>{{ labels('front_messages.sign_out', 'Sign out') }}</a>
                                             </li>
                                         @else
