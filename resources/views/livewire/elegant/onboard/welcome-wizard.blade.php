@@ -130,6 +130,9 @@
                             </div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
                             <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
@@ -264,13 +267,13 @@
                         </div>
                         <div class="modal-body">
                             <div class="form-group">
-                                <label for="business_name">Store / Business Name (optional)</label>
-                                <input id="business_name" type="text" wire:model="form.business_name" placeholder="Store / Business Name (optional)">
+                                <label for="business_name">Store / Business Name</label>
+                                <input id="business_name" type="text" wire:model="form.business_name" placeholder="Store / Business Name">
                                 @error('form.business_name') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
-                                <label for="email">Email (optional)</label>
-                                <input id="email" type="email" wire:model="form.email" placeholder="Email (optional)">
+                                <label for="email">Email</label>
+                                <input id="email" type="email" wire:model="form.email" placeholder="Email">
                                 @error('form.email') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
@@ -343,6 +346,9 @@
                             </div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
                             <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
@@ -409,16 +415,6 @@
                                 @error('form.name') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
-                                <label for="company_name">Company Name (optional)</label>
-                                <input id="company_name" type="text" wire:model="form.company_name" placeholder="Company Name (optional)">
-                                @error('form.company_name') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
-                                <label for="address">Address (optional)</label>
-                                <input id="address" type="text" wire:model="form.address" placeholder="Address (optional)">
-                                @error('form.address') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
                                 <label for="website">Website (optional)</label>
                                 <input id="website" type="text" wire:model="form.website" placeholder="Website (optional)">
                                 @error('form.website') <span class="error">{{ $message }}</span> @enderror
@@ -456,41 +452,44 @@
                             <h2>Login with Mobile Number</h2>
                         </div>
                         <div class="modal-body">
-                            <div class="form-group">
-                                <div class="mobile-input-wrapper">
-                                    <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
-                                        <option value="">Select country code</option>
-                                        @foreach($countries as $country)
-                                            <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
-                                                {{ $country->phonecode }} ({{ $country->name }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
-                                    @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
+                            @if(!$otpSent)
+                                <div class="form-group">
+                                    <div class="mobile-input-wrapper">
+                                        <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
+                                            <option value="">Select country code</option>
+                                            @foreach($countries as $country)
+                                                <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
+                                                    {{ $country->phonecode }} ({{ $country->name }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
+                                        @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                    @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                                 </div>
-                                @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            @if($otpSent)
+                                <button wire:click="sendLoginOtp" class="submit-btn">Send OTP</button>
+                            @else
+                                @if($successMessage)
+                                    <div class="alert alert-success">{{ $successMessage }}</div>
+                                @endif
                                 <div class="form-group">
                                     <label>Enter OTP</label>
-                            <div class="otp-inputs" x-data>
-                                @for ($i = 0; $i < 4; $i++)
-                                    <input type="text" class="otp-digit"
-                                           maxlength="1"
-                                           wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
+                                    <div class="otp-inputs" x-data>
+                                        @for ($i = 0; $i < 4; $i++)
+                                            <input type="text" class="otp-digit"
+                                                   maxlength="1"
+                                                   wire:model.debounce.500ms="form.otp_digits.{{ $i }}"
                                                    wire:keydown.enter.prevent="verifyLoginOtp"
-                                           @keydown.tab.prevent="$wire.focusNext({{ $i }})"
-                                           @paste="$wire.handlePaste($event, {{ $i }})"
-                                           placeholder="0">
-                                @endfor
+                                                   @keydown.tab.prevent="$wire.focusNext({{ $i }})"
+                                                   @paste="$wire.handlePaste($event, {{ $i }})"
+                                                   placeholder="0">
+                                        @endfor
                                         @error('form.otp') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            </div>
+                                    </div>
+                                </div>
                                 <button wire:click="verifyLoginOtp" class="submit-btn" id="verify_otp">Verify</button>
                                 <button wire:click="sendLoginOtp" class="resend-btn mt-2">Resend OTP</button>
-                            @else
-                                <button wire:click="sendLoginOtp" class="submit-btn">Send OTP</button>
                             @endif
                             @if($errorMessage)
                                 <div class="error-message mt-2">{{ $errorMessage }}</div>
