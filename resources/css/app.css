@@ -276,3 +276,128 @@ body {
 .react-tel-input .form-control {
     width: 100% !important;
 }
+
+/* Custom: Make country code in mobile input larger than mobile number */
+.mobile-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-input-wrapper .country-code {
+    font-size: 16px;
+    font-weight: bold;
+    min-width: 90px;
+    padding: 6px 10px;
+}
+
+.mobile-input-wrapper .mobile-number-input {
+    font-size: 1em;
+    /* Normal size for mobile number */
+    padding: 6px 10px;
+    flex: 1;
+}
+
+/* Ensure OTP input fields are styled the same in login and registration wizards */
+.otp-digit {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 24px !important;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #6b48ff;
+    font-weight: bold;
+    transition: border-color 0.3s ease;
+}
+
+.otp-digit:focus {
+    outline: none;
+    border-color: #ff5c8d;
+    box-shadow: 0 0 5px rgba(255, 92, 141, 0.5);
+}
+
+.otp-digit::placeholder {
+    color: #999;
+    font-size: 24px;
+}
+
+.otp-digit:not(:placeholder-shown) {
+    border-color: #6b48ff;
+}
+
+.wizard-center-text {
+    text-align: center;
+}
+label {
+    text-align: left;
+}
+
+.wizard-center-text label {
+    text-align: left !important;
+    display: block;
+}
+
+/* Remove pointer cursor from Continue button in step 4 of supplier registration wizard */
+#wizard-step4-continue,
+#supplier-step4-modal .submit-btn[type="submit"] {
+    cursor: default !important;
+}
+
+.alert,
+.alert-success {
+    text-align: center !important;
+    width: 100%;
+    display: block;
+}
+
+.error-message {
+    text-align: center !important;
+    width: 100%;
+    display: block;
+    color: #dc3545;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 8px 0;
+    margin-bottom: 10px;
+}
+
+.alert-info {
+    text-align: center !important;
+    width: 100%;
+    display: block;
+    color: #0c5460;
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 8px 0;
+    margin-bottom: 10px;
+}
+
+.otp-message {
+    text-align: center !important;
+    width: 100% !important;
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.modal-body>p,
+.modal-body>.otp-message {
+    width: 100% !important;
+    text-align: center !important;
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+p.otp-message,
+.modal-body>p {
+    text-align: center !important;
+    width: 100%;
+    display: block;
+}

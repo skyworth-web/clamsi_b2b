@@ -35,7 +35,7 @@
             <!-- Supplier Registration Modal (Step 1) -->
             @elseif($step == 1)
                 <div id="supplier-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -45,6 +45,12 @@
                             </div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <div class="form-group">
                                 <label for="business_name">Business Name</label>
                                 <input id="business_name" type="text" wire:model="form.business_name" placeholder="Business Name">
@@ -80,7 +86,7 @@
             <!-- Supplier Registration Modal (Step 2) -->
             @elseif($step == 2)
                 <div id="supplier-step2-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -91,8 +97,15 @@
                             </div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <div class="form-group">
                                 <div class="mobile-input-wrapper">
+                                    <div class="country-code-container">
                                     <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                         <option value="">Select country code</option>
                                         @foreach($countries as $country)
@@ -101,6 +114,7 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    </div>
                                     <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
                                     @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
                                 </div>
@@ -119,7 +133,7 @@
             <!-- Supplier Registration Modal (Step 3) - OTP Verification -->
             @elseif($step == 3)
                 <div id="supplier-step3-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -133,10 +147,10 @@
                             @if($successMessage)
                                 <div class="alert alert-success">{{ $successMessage }}</div>
                             @endif
-                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
+                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($otpVerified && $otpVerifiedMobile === ('+' . ltrim($form['country_code'], '+') . $form['mobile_number']))
                                 <div class="alert alert-success">Mobile verified!</div>
                                 <button wire:click="nextAfterOtpSupplier" class="submit-btn">Next</button>
@@ -185,7 +199,7 @@
             <!-- Supplier Registration Modal (Step 4) - Select Preferences -->
             @elseif($step == 4)
                 <div id="supplier-step4-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -193,6 +207,12 @@
                             <div class="step-indicator">Step 4</div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <form wire:submit.prevent="submitStep4">
                                 <div class="preference-list">
                                     @foreach($categories as $category)
@@ -213,7 +233,7 @@
             <!-- Supplier Registration Modal (Step 5) - Additional Details -->
             @elseif($step == 5)
                 <div id="supplier-step5-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -221,6 +241,12 @@
                             <div class="step-indicator">Step 5</div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <!-- No summary panel, no country code/mobile number -->
                             <div class="form-group">
                                 <label for="name">Full Name</label>
@@ -238,11 +264,6 @@
                                 @error('form.zip_code') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
-                                <label for="website">Website (optional)</label>
-                                <input id="website" type="text" wire:model="form.website" placeholder="Website (optional)">
-                                @error('form.website') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
                                 <div class="terms-checkbox">
                                     <input id="terms" type="checkbox" wire:model="form.terms">
                                     <label for="terms">I agree to the <a href="{{ route('term_and_conditions') }}" target="_blank" class="text-primary">Terms and Conditions</a></label>
@@ -257,7 +278,7 @@
             <!-- Buyer Registration Modal (Step 6) -->
             @elseif($step == 6)
                 <div id="buyer-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <div class="modal-header">
                             <h2>Register as a Buyer</h2>
@@ -266,6 +287,12 @@
                             </div>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <div class="form-group">
                                 <label for="business_name">Store / Business Name</label>
                                 <input id="business_name" type="text" wire:model="form.business_name" placeholder="Store / Business Name">
@@ -296,7 +323,7 @@
             <!-- Buyer Shipping Details Modal (Step 8) -->
             @elseif($step == 8)
                 <div id="buyer-step2-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -304,12 +331,19 @@
                             <img src="{{ asset('storage/onboard/for_customers.png') }}" alt="For Buyers" class="card-image">
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <div class="form-group">
                                 <label for="address">Address</label>
                                 <input id="address" type="text" wire:model="form.address" placeholder="Address">
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="mobile-input-wrapper">
+                                <div class="country-code-container">
                                 <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                     <option value="">Select country code</option>
                                     @foreach($countries as $country)
@@ -318,6 +352,7 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                </div>
                                 <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
                                 @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
                             </div>
@@ -335,7 +370,7 @@
             <!-- Buyer OTP Verification Modal (Step 9) -->
             @elseif($step == 9)
                 <div id="buyer-step3-otp-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
@@ -349,10 +384,10 @@
                             @if($successMessage)
                                 <div class="alert alert-success">{{ $successMessage }}</div>
                             @endif
-                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
+                            <p class="otp-message">We've sent a 4-digit code to your mobile. Please enter it below.</p>
                             @if($otpVerified && $otpVerifiedMobile === ('+' . ltrim($form['country_code'], '+') . $form['mobile_number']))
                                 <div class="alert alert-success">Mobile verified!</div>
                                 <button wire:click="nextAfterOtpBuyer" class="submit-btn">Next</button>
@@ -401,23 +436,24 @@
             <!-- Buyer Complete Registration Modal (Step 10) -->
             @elseif($step == 10)
                 <div id="buyer-step4-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="startWizard" class="modal-close">×</button>
                         <button wire:click="goBack" class="modal-back"><</button>
                         <div class="modal-header">
                             <h2>Complete Registration</h2>
                         </div>
                         <div class="modal-body">
+                            @if($successMessage)
+                                <div class="alert alert-success">{{ $successMessage }}</div>
+                            @endif
+                            @if($errorMessage)
+                                <div class="error-message">{{ $errorMessage }}</div>
+                            @endif
                             <!-- No summary panel, no country code/mobile number -->
                             <div class="form-group">
                                 <label for="name">Full Name</label>
                                 <input id="name" type="text" wire:model="form.name" placeholder="Full Name">
                                 @error('form.name') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="form-group">
-                                <label for="website">Website (optional)</label>
-                                <input id="website" type="text" wire:model="form.website" placeholder="Website (optional)">
-                                @error('form.website') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
                                 <label>Product Category</label>
@@ -446,7 +482,7 @@
                 
             @elseif($step == 'login')
                 <div id="login-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal-content">
+                    <div class="modal-content wizard-center-text">
                         <button wire:click="closeWizard" class="modal-close">×</button>
                         <div class="modal-header">
                             <h2>Login with Mobile Number</h2>
@@ -455,6 +491,7 @@
                             @if(!$otpSent)
                                 <div class="form-group">
                                     <div class="mobile-input-wrapper">
+                                        <div class="country-code-container">
                                         <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                             <option value="">Select country code</option>
                                             @foreach($countries as $country)
@@ -463,6 +500,7 @@
                                                 </option>
                                             @endforeach
                                         </select>
+                                        </div>
                                         <input type="tel" wire:model="form.mobile_number" placeholder="Mobile Number" class="mobile-number-input">
                                         @error('form.mobile_number') <span class="error">{{ $message }}</span> @enderror
                                     </div>
@@ -474,7 +512,7 @@
                                     <div class="alert alert-success">{{ $successMessage }}</div>
                                 @endif
                                 <div class="form-group">
-                                    <label>Enter OTP</label>
+                                    <label class="center">Enter OTP</label>
                                     <div class="otp-inputs" x-data>
                                         @for ($i = 0; $i < 4; $i++)
                                             <input type="text" class="otp-digit"

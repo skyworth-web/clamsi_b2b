@@ -145,6 +145,7 @@
             padding: 20px;
             position: relative;
             color: white;
+            text-align: center;
         }
         .modal-close {
             position: absolute;
@@ -232,10 +233,16 @@
             padding: 10px;
             border: none;
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 16px !important;
             color: #333;
             height: 40px;
             box-sizing: border-box;
+        }
+        label {
+            text-align: left;
+        }
+        label.center {
+            text-align: center;
         }
         .mobile-number-input {
             flex: 1;
@@ -262,7 +269,7 @@
             width: 50px;
             height: 50px;
             text-align: center;
-            font-size: 24px;
+            font-size: 24px !important;
             border: 2px solid #ffffff;
             border-radius: 8px;
             background-color: #ffffff;
@@ -345,7 +352,6 @@
             border-radius: 5px;
             background-color: #fff;
             color: #333;
-            font-size: 14px;
             display: flex;
             align-items: center;
             box-sizing: border-box;
