@@ -255,7 +255,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <textarea id="address" wire:model="form.address" placeholder="Address" rows="3"></textarea>
+                                <input id="address" wire:model="form.address" placeholder="Address" rows="3"></input>
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
@@ -506,6 +506,10 @@
                                     </div>
                                     @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                                 </div>
+                                <div class="form-group terms-checkbox" style="margin-bottom: 10px;">
+                                    <input id="remember_device" type="checkbox" wire:model="form.remember_device">
+                                    <label for="remember_device">Remember This Device for 30 Days</label>
+                                </div>
                                 <button wire:click="sendLoginOtp" class="submit-btn">Send OTP</button>
                             @else
                                 @if($successMessage)
@@ -539,6 +543,20 @@
         </div>
     </div>
 </div>
+@if($showRememberPopup)
+    <div class="modal-overlay" style="display: flex; z-index: 2000;">
+        <div class="modal-content wizard-center-text" style="max-width: 350px;">
+            <button wire:click="$set('showRememberPopup', false)" class="modal-close">×</button>
+            <div class="modal-header">
+                <h2>Device Remembered</h2>
+            </div>
+            <div class="modal-body">
+                <p>This device will be remembered for 30 days. You won't need to enter an OTP during this period.</p>
+                <button wire:click="$set('showRememberPopup', false)" class="submit-btn">OK</button>
+            </div>
+        </div>
+    </div>
+@endif
 <script defer>
     document.addEventListener("livewire:load", () => {
         // Listen for Livewire event to trigger focus change

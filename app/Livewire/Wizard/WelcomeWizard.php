@@ -47,6 +47,7 @@ class WelcomeWizard extends Component
     public $otpVerified = false; // Track if OTP is verified
     public $otpVerifiedMobile = null; // Track which mobile was verified
     public $successMessage = '';
+    public $showRememberPopup = false;
 
     public function mount()
     {
@@ -232,7 +233,12 @@ class WelcomeWizard extends Component
             'form.business_name' => 'required|string|max:255',
             'form.email' => 'required|email|unique:users,email|unique:suppliers,email',
             'form.country_id' => 'required|exists:countries,id',
-            'form.website' => 'nullable|url|max:255',
+            'form.website' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/'
+            ],
         ]);
 
         $this->errorMessage = '';
@@ -470,7 +476,12 @@ class WelcomeWizard extends Component
             'form.address' => 'required|string|max:255',
             'form.zip_code' => 'required|string|max:20',
             'form.terms' => 'accepted',
-            'form.website' => 'nullable|string|max:255',
+            'form.website' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/'
+            ],
             'form.country_code' => 'required|string|regex:/^\+?[0-9]{1,4}$/',
             'form.mobile_number' => [
                 'required',
@@ -745,7 +756,12 @@ class WelcomeWizard extends Component
             'form.name' => 'required|string|max:255',
             'form.categories' => 'required|array|min:1',
             'form.terms' => 'accepted',
-            'form.website' => 'nullable|string|max:255',
+            'form.website' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/'
+            ],
             'form.company_name' => 'nullable|string|max:255',
             'form.latitude' => 'nullable|numeric|between:-90,90',
             'form.longitude' => 'nullable|numeric|between:-180,180',
@@ -1038,7 +1054,7 @@ class WelcomeWizard extends Component
             return;
         }
         $this->validate([
-            'form.country_code' => 'required|string|regex:/^\\+?[0-9]{1,4}$/',
+            'form.country_code' => 'required|string|regex:/^\+?[0-9]{1,4}$/',
             'form.mobile_number' => [
                 'required',
                 'numeric',
@@ -1134,6 +1150,12 @@ class WelcomeWizard extends Component
             if ($user) {
                 \Auth::login($user);
                 $this->resetForm();
+                // Set remember device cookie if checked (always set after OTP success)
+                if (!empty($this->form['remember_device'])) {
+                    $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
+                    \Cookie::queue($cookieName, '1', 60 * 24 * 30); // 30 days
+                    $this->showRememberPopup = true;
+                }
                 // Check role or redirect as needed
                 if ($user->role_id == 4) {
                     return redirect()->route('seller.home');
