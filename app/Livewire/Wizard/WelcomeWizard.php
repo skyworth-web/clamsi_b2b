@@ -48,6 +48,9 @@ class WelcomeWizard extends Component
     public $otpVerifiedMobile = null; // Track which mobile was verified
     public $successMessage = '';
     public $showRememberPopup = false;
+    public $showRememberModal = false;
+    public $rememberDeviceModalChecked = false;
+    public $redirectUrl = null;
 
     public function mount()
     {
@@ -561,12 +564,9 @@ class WelcomeWizard extends Component
 
             Auth::login($user);
             \Log::info('Supplier registered and logged in:', ['user_id' => $userId]);
-
-            $this->resetForm();
-            if($user->role_id == 4){
-                    return redirect()->route('seller.home');
-                }
-            return redirect()->route('home');
+            $this->showRememberModal = true;
+            $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+            return;
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Supplier registration failed:', ['error' => $e->getMessage()]);
@@ -808,8 +808,9 @@ class WelcomeWizard extends Component
             DB::commit();
             Auth::login($user);
             \Log::info('Buyer registered and logged in:', ['user_id' => $userId]);
-            $this->resetForm();
-            return redirect()->route('home');
+            $this->showRememberModal = true;
+            $this->redirectUrl = route('home');
+            return;
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Buyer registration failed:', ['error' => $e->getMessage()]);
@@ -960,19 +961,18 @@ class WelcomeWizard extends Component
                 $user = \App\Models\User::where('mobile', $mobile)->first();
             if ($user) {
                 Auth::login($user);
-                $this->resetForm();
-                if ($user->role_id == 4) {
-                    return redirect()->route('seller.home');
-                }
-                return redirect()->route('home');
+                $this->showRememberModal = true;
+                $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+                return;
             } else if (DB::table('suppliers')->where('mobile_number', $mobile)->exists()) {
                 $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
                 if ($supplier && $supplier->user_id) {
                     $user = \App\Models\User::find($supplier->user_id);
                     if ($user) {
                         Auth::login($user);
-                        $this->resetForm();
-                        return redirect()->route('seller.home');
+                        $this->showRememberModal = true;
+                        $this->redirectUrl = route('seller.home');
+                        return;
                     }
                 }
             }
@@ -1061,6 +1061,17 @@ class WelcomeWizard extends Component
                 'regex:/^[0-9]{7,15}$/',
             ],
         ]);
+        // Check for remember device cookie and skip OTP if present
+        $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
+        if (request()->hasCookie($cookieName)) {
+            $user = \App\Models\User::where('mobile', '+' . preg_replace('/\\D/', '', (string) $this->form['country_code']) . preg_replace('/\\D/', '', (string) $this->form['mobile_number']))->first();
+            if ($user) {
+                \Auth::login($user);
+                $this->showRememberModal = true;
+                $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+                return;
+            }
+        }
         $countryCode = preg_replace('/\\D/', '', (string) $this->form['country_code']);
         $mobileNumber = preg_replace('/\\D/', '', (string) $this->form['mobile_number']);
         $mobile = '+' . $countryCode . $mobileNumber;
@@ -1149,7 +1160,7 @@ class WelcomeWizard extends Component
             $user = \App\Models\User::where('mobile', $mobile)->first();
             if ($user) {
                 \Auth::login($user);
-                $this->resetForm();
+                $this->showRememberModal = true;
                 // Set remember device cookie if checked (always set after OTP success)
                 if (!empty($this->form['remember_device'])) {
                     $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
@@ -1167,7 +1178,7 @@ class WelcomeWizard extends Component
                     $user = \App\Models\User::find($supplier->user_id);
                     if ($user) {
                         \Auth::login($user);
-                        $this->resetForm();
+                        $this->showRememberModal = true;
                         return redirect()->route('seller.home');
                     }
                 }
@@ -1183,6 +1194,21 @@ class WelcomeWizard extends Component
             $this->otpTries++;
             $this->errorMessage = 'Invalid OTP. Please try again.';
             $this->successMessage = '';
+        }
+    }
+
+    public function confirmRememberDeviceModal()
+    {
+        if ($this->rememberDeviceModalChecked) {
+            $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
+            \Cookie::queue($cookieName, '1', 60 * 24 * 30); // 30 days
+        }
+        $this->showRememberModal = false;
+        $this->rememberDeviceModalChecked = false;
+        if ($this->redirectUrl) {
+            $redirect = $this->redirectUrl;
+            $this->resetForm();
+            return redirect($redirect);
         }
     }
 
