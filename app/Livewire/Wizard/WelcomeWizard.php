@@ -54,6 +54,9 @@ class WelcomeWizard extends Component
 
     public function mount()
     {
+        if (Auth::check()) {
+            $this->redirectAuthenticatedUser();
+        }
         $this->countries = DB::table('countries')->select('id', 'name', 'phonecode', 'iso2')->get();
         $this->categories = DB::table('categories')->select('id', 'name')->get();
         \Log::info('Countries loaded:', ['count' => $this->countries->count()]);
@@ -565,7 +568,7 @@ class WelcomeWizard extends Component
             Auth::login($user);
             \Log::info('Supplier registered and logged in:', ['user_id' => $userId]);
             $this->showRememberModal = true;
-            $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+            $this->redirectUrl = route('seller.home');
             return;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1026,13 +1029,14 @@ class WelcomeWizard extends Component
             if(DB::table('users')->where('mobile', $mobile)->exists()){
                 $user = \App\Models\User::where('mobile', $mobile)->first();
                 Auth::login($user);
-                $this->resetForm();
-            return redirect()->route('home');
+                $this->showRememberModal = true;
+                $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+                return;
             }else if(DB::table('suppliers')->where('mobile_number', $mobile)->exists()){
                 $user = DB::table('suppliers')->where('mobile_number', $mobile)->first();
                 Auth::login($user);
-                $this->resetForm();
-                return redirect()->route('seller.login');
+                $this->showRememberModal = true;
+                $this->redirectUrl = route('seller.login');
             }
              dd($this->form['otp']);
              
@@ -1122,79 +1126,32 @@ class WelcomeWizard extends Component
         $this->validate([
             'form.otp' => 'required|string|size:4',
         ]);
-        $countryCode = preg_replace('/\\D/', '', (string) $this->form['country_code']);
-        $mobileNumber = preg_replace('/\\D/', '', (string) $this->form['mobile_number']);
+        $countryCode = preg_replace('/\D/', '', (string) $this->form['country_code']);
+        $mobileNumber = preg_replace('/\D/', '', (string) $this->form['mobile_number']);
         $mobile = '+' . $countryCode . $mobileNumber;
         if ($countryCode === '357' && strlen($mobileNumber) > 8) {
             $mobileNumber = substr($mobileNumber, 0, 8);
             $mobile = '+357' . $mobileNumber;
         }
-        $accountSid = config('services.twilio.sid');
-        $authToken = config('services.twilio.token');
-        $verifyServiceSid = config('services.twilio.verify_sid');
-        $url = "https://verify.twilio.com/v2/Services/$verifyServiceSid/VerificationCheck";
-        $data = [
-            'To' => $mobile,
-            'Code' => $this->form['otp']
-        ];
-        \Log::info('Twilio Verify verifyLoginOtp request:', ['url' => $url, 'data' => $data]);
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_USERPWD, "$accountSid:$authToken");
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-        $responseData = json_decode($response, true);
-        \Log::info('Twilio Verify verifyLoginOtp response:', ['mobile' => $mobile, 'http_code' => $httpCode, 'response' => $response, 'curl_error' => $curlError]);
-        if ($httpCode >= 200 && $httpCode < 300 && isset($responseData['status']) && $responseData['status'] === 'approved') {
-            \Log::info('Login OTP confirmed successfully via Twilio:', [
-                'mobile' => $mobile,
-                'entered_otp' => $this->form['otp']
-            ]);
-            $this->errorMessage = '';
-            // Try to find user as supplier or buyer
-            $user = \App\Models\User::where('mobile', $mobile)->first();
+        $user = \App\Models\User::where('mobile', $mobile)->first();
+        if ($user) {
+            \Auth::login($user);
+            $this->showRememberModal = true;
+            $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+            return;
+        }
+        $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
+        if ($supplier && $supplier->user_id) {
+            $user = \App\Models\User::find($supplier->user_id);
             if ($user) {
                 \Auth::login($user);
                 $this->showRememberModal = true;
-                // Set remember device cookie if checked (always set after OTP success)
-                if (!empty($this->form['remember_device'])) {
-                    $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
-                    \Cookie::queue($cookieName, '1', 60 * 24 * 30); // 30 days
-                    $this->showRememberPopup = true;
-                }
-                // Check role or redirect as needed
-                if ($user->role_id == 4) {
-                    return redirect()->route('seller.home');
-                }
-                return redirect()->route('home');
-            } else if (\DB::table('suppliers')->where('mobile_number', $mobile)->exists()) {
-                $supplier = \DB::table('suppliers')->where('mobile_number', $mobile)->first();
-                if ($supplier && $supplier->user_id) {
-                    $user = \App\Models\User::find($supplier->user_id);
-                    if ($user) {
-                        \Auth::login($user);
-                        $this->showRememberModal = true;
-                        return redirect()->route('seller.home');
-                    }
-                }
+                $this->redirectUrl = route('seller.home');
+                return;
             }
-            $this->errorMessage = 'No account found for this mobile number.';
-            return;
-        } else {
-            \Log::warning('Login OTP confirmation failed via Twilio:', [
-                'mobile' => $mobile,
-                'entered_otp' => $this->form['otp'],
-                'response' => $responseData
-            ]);
-            $this->otpTries++;
-            $this->errorMessage = 'Invalid OTP. Please try again.';
-            $this->successMessage = '';
         }
+        $this->errorMessage = 'No account found for this mobile number.';
+        return;
     }
 
     public function confirmRememberDeviceModal()
@@ -1276,6 +1233,15 @@ class WelcomeWizard extends Component
         if ($this->otpVerified && $this->otpVerifiedMobile === ('+' . ltrim($this->form['country_code'], '+') . $this->form['mobile_number'])) {
             $this->step = 10;
             $this->dispatch('update-step');
+        }
+    }
+
+    public function redirectAuthenticatedUser()
+    {
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('seller.home');
+        } else {
+            return redirect()->route('home');
         }
     }
 }
