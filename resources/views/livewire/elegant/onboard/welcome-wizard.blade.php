@@ -581,3 +581,11 @@
         });
     });
 </script>
+
+{{-- DEBUG OUTPUT --}}
+<div style="position:fixed;bottom:0;left:0;z-index:3000;background:#fff;color:#000;padding:8px 16px;font-size:14px;border-top:1px solid #ccc;opacity:0.95;">
+    <strong>DEBUG:</strong>
+    showRememberModal: @json($showRememberModal) |
+    redirectUrl: @json($redirectUrl) |
+    step: @json($step)
+</div>

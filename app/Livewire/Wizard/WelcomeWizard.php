@@ -485,6 +485,9 @@ class WelcomeWizard extends Component
 
     public function submitStep5()
     {
+        \Log::info('submitStep5: called', [
+            'form' => $this->form,
+        ]);
         $this->validate([
             'form.name' => 'required|string|max:255',
             'form.business_name' => 'required|string|max:255',
@@ -578,10 +581,18 @@ class WelcomeWizard extends Component
             DB::commit();
 
             Auth::login($user);
-            \Log::info('Supplier registered and logged in:', ['user_id' => $userId]);
+            \Log::info('Supplier registered and logged in:', [
+                'user_id' => $userId,
+                'role_id' => $user->role_id,
+                'showRememberModal' => true,
+                'redirectUrl' => route('seller.home'),
+            ]);
             $this->showRememberModal = true;
             $this->redirectUrl = route('seller.home');
-            \Log::info('submitStep5: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+            \Log::info('submitStep5: showRememberModal set', [
+                'showRememberModal' => $this->showRememberModal,
+                'redirectUrl' => $this->redirectUrl,
+            ]);
             return;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1209,10 +1220,13 @@ class WelcomeWizard extends Component
             $mobileNumber = substr($mobileNumber, 0, 8);
             $mobile = '+357' . $mobileNumber;
         }
+
+        // ===== TEMPORARY BYPASS FOR TESTING: Accept any OTP =====
+        // Remove or comment this block to restore real Twilio verification
         $user = \App\Models\User::where('mobile', $mobile)->first();
         if ($user) {
             \Auth::login($user);
-            \Log::info('verifyLoginOtp: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+            \Log::info('verifyLoginOtp: User logged in (TEMP BYPASS)', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             $this->showRememberModal = true;
             $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
             \Log::info('verifyLoginOtp: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
@@ -1223,7 +1237,7 @@ class WelcomeWizard extends Component
             $user = \App\Models\User::find($supplier->user_id);
             if ($user) {
                 \Auth::login($user);
-                \Log::info('verifyLoginOtp: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+                \Log::info('verifyLoginOtp: Supplier user logged in (TEMP BYPASS)', ['user_id' => $user->id, 'role_id' => $user->role_id]);
                 $this->showRememberModal = true;
                 $this->redirectUrl = route('seller.home');
                 \Log::info('verifyLoginOtp: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
@@ -1232,16 +1246,28 @@ class WelcomeWizard extends Component
         }
         $this->errorMessage = 'No account found for this mobile number.';
         return;
+        // ===== END TEMPORARY BYPASS =====
+
+        /*
+        // Real Twilio verification logic here (restore when done testing)
+        */
     }
 
     public function confirmRememberDeviceModal()
     {
         \Log::info('confirmRememberDeviceModal: called', [
             'showRememberModal' => $this->showRememberModal,
-            'redirectUrl' => $this->redirectUrl
+            'redirectUrl' => $this->redirectUrl,
+            'user' => Auth::user() ? [
+                'id' => Auth::user()->id,
+                'role_id' => Auth::user()->role_id,
+            ] : null,
         ]);
         if ($this->rememberDeviceModalChecked) {
             $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
+            \Log::info('confirmRememberDeviceModal: setting remember device cookie', [
+                'cookieName' => $cookieName
+            ]);
             \Cookie::queue($cookieName, '1', 60 * 24 * 30); // 30 days
         }
         $this->showRememberModal = false;
