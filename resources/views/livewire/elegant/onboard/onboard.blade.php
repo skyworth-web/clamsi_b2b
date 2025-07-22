@@ -59,7 +59,6 @@
             background-color: rgba(255, 92, 141, 0.1);
             color: #ff0000;
             padding: 10px;
-            Number: 5px;
             margin-bottom: 15px;
             text-align: center;
             font-size: 14px;
@@ -395,6 +394,14 @@
     @livewireScripts
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        window.addEventListener('registration-success', function () {
+            console.log('✅ Registration success event received!');
+            alert('Registration successful!');
+        });
+    });
+</script>
     <script>
         $(document).ready(function() {
             let initializedModals = {};

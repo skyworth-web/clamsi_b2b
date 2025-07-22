@@ -12,7 +12,7 @@
     </div>
 
     <!-- Wizard Screen -->
-    <div class="container {{ $showWizard ? '' : 'hidden' }}">
+    <div class="container {{ ($showWizard && $step != 13) ? '' : 'hidden' }}">
         <div class="wizard-background">
             @if($errorMessage)
                 <div class="alert alert-danger">{{ $errorMessage }}</div>
@@ -58,14 +58,16 @@
                             </div>
                             <div class="form-group">
                                 <label for="country_id">Country</label>
-                                <select id="country_id" wire:model="form.country_id" class="select2 form-control">
-                                    <option value="">Select a country</option>
-                                    @foreach($countries as $country)
-                                        <option value="{{ $country->id }}" {{ $form['country_id'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
-                                            {{ $country->name }} ({{ $country->iso2 }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div wire:ignore>
+                                    <select id="country_id" wire:model="form.country_id" class="select2 form-control">
+                                        <option value="">Select a country</option>
+                                        @foreach($countries as $country)
+                                            <option value="{{ $country->id }}" {{ $form['country_id'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
+                                                {{ $country->name }} ({{ $country->iso2 }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 @error('form.country_id') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
@@ -165,7 +167,7 @@
                                                @paste="$wire.handlePaste($event, {{ $i }})"
                                                placeholder="0">
                                     @endfor
-                                    @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                                    @error('form.otp') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="d-flex justify-content-center align-content-center my-2">
                                     <div id="recaptcha-container"></div>
@@ -255,7 +257,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <input id="address" wire:model="form.address" placeholder="Address" rows="3"></input>
+                                <input id="address" wire:model="form.address" placeholder="Address">
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
@@ -305,14 +307,16 @@
                             </div>
                             <div class="form-group">
                                 <label for="country_id">Country</label>
-                                <select id="country_id" wire:model="form.country_id" class="select2 form-control">
-                                    <option value="">Select a country</option>
-                                    @foreach($countries as $country)
-                                        <option value="{{ $country->id }}" {{ $form['country_id'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
-                                            {{ $country->name }} ({{ $country->iso2 }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div wire:ignore>
+                                    <select id="country_id" wire:model="form.country_id" class="select2 form-control">
+                                        <option value="">Select a country</option>
+                                        @foreach($countries as $country)
+                                            <option value="{{ $country->id }}" {{ $form['country_id'] == $country->id ? 'selected' : '' }} data-iso2="{{ $country->iso2 }}">
+                                                {{ $country->name }} ({{ $country->iso2 }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 @error('form.country_id') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <button wire:click="submitStep6" class="submit-btn">Continue</button>
@@ -402,7 +406,7 @@
                                                @paste="$wire.handlePaste($event, {{ $i }})"
                                                placeholder="0">
                                     @endfor
-                                    @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                                    @error('form.otp') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="d-flex justify-content-center align-content-center my-2">
                                     <div id="recaptcha-container"></div>
@@ -449,7 +453,7 @@
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
-                            <!-- No summary panel, no country code/mobile number -->
+                            
                             <div class="form-group">
                                 <label for="name">Full Name</label>
                                 <input id="name" type="text" wire:model="form.name" placeholder="Full Name">
@@ -553,8 +557,8 @@
         </div>
     </div>
 @endif
-@if($showRememberModal)
-    <div class="modal-overlay" style="display: flex; z-index: 2000;">
+@if($step == 13)
+    <div class="container" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="modal-content wizard-center-text" style="max-width: 350px;">
             <div class="modal-header">
                 <h2>Remember This Device</h2>
@@ -581,11 +585,3 @@
         });
     });
 </script>
-
-{{-- DEBUG OUTPUT --}}
-<div style="position:fixed;bottom:0;left:0;z-index:3000;background:#fff;color:#000;padding:8px 16px;font-size:14px;border-top:1px solid #ccc;opacity:0.95;">
-    <strong>DEBUG:</strong>
-    showRememberModal: @json($showRememberModal) |
-    redirectUrl: @json($redirectUrl) |
-    step: @json($step)
-</div>

@@ -15,15 +15,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (!file_exists($sqlDumpPath) && !file_exists($installViewPath))
-        <meta name="keywords" content='{{ $metaKeys ?? $system_settings['app_name'] }}'>
-        <meta name="description" content='{{ $metaDescription ?? $system_settings['app_name'] }}'>
-        <meta name="product_image" property="og:image"
-            content='{{ $metaImage ?? asset('storage/' . $web_settings['logo']) }}'>
-        <link rel="shortcut icon" href="{{ asset('storage/' . $web_settings['favicon']) }}" type="image/x-icon">
-        <title>
-            {{ $title ?? '' }} {{ $system_settings['app_name'] }}
-        </title>
-    @endif
+    <meta name="keywords" content="{{ $metaKeys ?? $system_settings['app_name'] }}">
+    <meta name="description" content="{{ $metaDescription ?? $system_settings['app_name'] }}">
+    <meta name="product_image" property="og:image" content="{{ $metaImage ?? asset('storage/' . $web_settings['logo']) }}">
+    <link rel="shortcut icon" href="{{ asset('storage/' . $web_settings['favicon']) }}" type="image/x-icon">
+    <title>
+        {{ $title ?? '' }} {{ $system_settings['app_name'] }}
+    </title>
+@endif
     <meta property="og:image:type" content="image/jpg,png,jpeg,gif,bmp,eps">
     <meta property="og:image:width" content="1024">
     <meta property="og:image:height" content="1024">
@@ -42,7 +41,7 @@
         'frontend/elegant/css/iziToast.css',
         'frontend/elegant/css/daterangepicker.css',
         'frontend/elegant/css/responsive.css',
-        // 'frontend/elegant/css/lightbox.css',
+        <!-- 'frontend/elegant/css/lightbox.css', -->
         'frontend/elegant/css/shareon.min.css',
         'frontend/elegant/css/app.css',
         'frontend/elegant/js/firebase-app.js',

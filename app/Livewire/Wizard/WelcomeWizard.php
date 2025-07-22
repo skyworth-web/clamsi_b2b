@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class WelcomeWizard extends Component
 {
     public $showWizard = false;
+    
     public $country_search = '';
 
     public $step = 0;
@@ -48,7 +49,6 @@ class WelcomeWizard extends Component
     public $otpVerifiedMobile = null; // Track which mobile was verified
     public $successMessage = '';
     public $showRememberPopup = false;
-    public $showRememberModal = false;
     public $rememberDeviceModalChecked = false;
     public $redirectUrl = null;
 
@@ -235,6 +235,9 @@ class WelcomeWizard extends Component
 
     public function submitStep1()
     {
+        \Log::info('Dispatching Livewire event: registration-success');
+        $this->dispatch('registration-success', message: 'Registration successful!');
+
         $this->validate([
             'form.business_name' => 'required|string|max:255',
             'form.email' => 'required|email|unique:users,email|unique:suppliers,email',
@@ -581,17 +584,22 @@ class WelcomeWizard extends Component
             DB::commit();
 
             Auth::login($user);
+            \Log::info('Is Livewire component?', ['is_livewire' => $this instanceof \Livewire\Component]);
+
+
             \Log::info('Supplier registered and logged in:', [
                 'user_id' => $userId,
                 'role_id' => $user->role_id,
-                'showRememberModal' => true,
+                'showRememberPopup' => true,
                 'redirectUrl' => route('seller.home'),
             ]);
-            $this->showRememberModal = true;
+            $this->step = 13;
             $this->redirectUrl = route('seller.home');
-            \Log::info('submitStep5: showRememberModal set', [
-                'showRememberModal' => $this->showRememberModal,
+            \Log::info('submitStep5: showRememberPopup set', [
+                'showRememberPopup' => $this->showRememberPopup,
                 'redirectUrl' => $this->redirectUrl,
+                'step' => $this->step,
+                'showWizard' => $this->showWizard,
             ]);
             return;
         } catch (\Exception $e) {
@@ -854,9 +862,13 @@ class WelcomeWizard extends Component
             DB::commit();
             Auth::login($user);
             \Log::info('Buyer registered and logged in:', ['user_id' => $userId]);
-            $this->showRememberModal = true;
+            $this->step = 13;
             $this->redirectUrl = route('home');
-            \Log::info('submitStep10: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+            \Log::info('submitStep10: showRememberPopup set, redirectUrl', [
+                'redirectUrl' => $this->redirectUrl,
+                'step' => $this->step,
+                'showWizard' => $this->showWizard,
+            ]);
             return;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -984,9 +996,13 @@ class WelcomeWizard extends Component
         if ($user) {
             Auth::login($user);
             \Log::info('submitStep12: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-            $this->showRememberModal = true;
+            $this->step = 13;
             $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-            \Log::info('submitStep12: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+            \Log::info('submitStep12: showRememberPopup set, redirectUrl', [
+                'redirectUrl' => $this->redirectUrl,
+                'step' => $this->step,
+                'showWizard' => $this->showWizard,
+            ]);
             return;
         } else if (DB::table('suppliers')->where('mobile_number', $mobile)->exists()) {
             $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
@@ -995,9 +1011,13 @@ class WelcomeWizard extends Component
                 if ($user) {
                     Auth::login($user);
                     \Log::info('submitStep12: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                    $this->showRememberModal = true;
+                    $this->step = 13;
                     $this->redirectUrl = route('seller.home');
-                    \Log::info('submitStep12: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                    \Log::info('submitStep12: showRememberPopup set, redirectUrl', [
+                        'redirectUrl' => $this->redirectUrl,
+                        'step' => $this->step,
+                        'showWizard' => $this->showWizard,
+                    ]);
                     return;
                 }
             }
@@ -1040,9 +1060,13 @@ class WelcomeWizard extends Component
             if ($user) {
                 Auth::login($user);
                 \Log::info('submitStep12: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                $this->showRememberModal = true;
+                $this->step = 13;
                 $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-                \Log::info('submitStep12: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                \Log::info('submitStep12: showRememberPopup set, redirectUrl', [
+                    'redirectUrl' => $this->redirectUrl,
+                    'step' => $this->step,
+                    'showWizard' => $this->showWizard,
+                ]);
                 return;
             } else if (DB::table('suppliers')->where('mobile_number', $mobile)->exists()) {
                 $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
@@ -1051,9 +1075,13 @@ class WelcomeWizard extends Component
                     if ($user) {
                         Auth::login($user);
                         \Log::info('submitStep12: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                        $this->showRememberModal = true;
+                        $this->step = 13;
                         $this->redirectUrl = route('seller.home');
-                        \Log::info('submitStep12: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                        \Log::info('submitStep12: showRememberPopup set, redirectUrl', [
+                            'redirectUrl' => $this->redirectUrl,
+                            'step' => $this->step,
+                            'showWizard' => $this->showWizard,
+                        ]);
                         return;
                     }
                 }
@@ -1110,17 +1138,25 @@ class WelcomeWizard extends Component
                 $user = \App\Models\User::where('mobile', $mobile)->first();
                 Auth::login($user);
                 \Log::info('submitStep12_old: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                $this->showRememberModal = true;
+                $this->step = 13;
                 $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-                \Log::info('submitStep12_old: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                \Log::info('submitStep12_old: showRememberPopup set, redirectUrl', [
+                    'redirectUrl' => $this->redirectUrl,
+                    'step' => $this->step,
+                    'showWizard' => $this->showWizard,
+                ]);
                 return;
             }else if(DB::table('suppliers')->where('mobile_number', $mobile)->exists()){
                 $user = DB::table('suppliers')->where('mobile_number', $mobile)->first();
                 Auth::login($user);
                 \Log::info('submitStep12_old: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                $this->showRememberModal = true;
+                $this->step = 13;
                 $this->redirectUrl = route('seller.home');
-                \Log::info('submitStep12_old: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                \Log::info('submitStep12_old: showRememberPopup set, redirectUrl', [
+                    'redirectUrl' => $this->redirectUrl,
+                    'step' => $this->step,
+                    'showWizard' => $this->showWizard,
+                ]);
                 return;
             }
              dd($this->form['otp']);
@@ -1157,9 +1193,13 @@ class WelcomeWizard extends Component
             if ($user) {
                 \Auth::login($user);
                 \Log::info('sendLoginOtp: User logged in via cookie', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                $this->showRememberModal = true;
+                $this->step = 13;
                 $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-                \Log::info('sendLoginOtp: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                \Log::info('sendLoginOtp: showRememberPopup set, redirectUrl', [
+                    'redirectUrl' => $this->redirectUrl,
+                    'step' => $this->step,
+                    'showWizard' => $this->showWizard,
+                ]);
                 return;
             }
         }
@@ -1227,9 +1267,13 @@ class WelcomeWizard extends Component
         if ($user) {
             \Auth::login($user);
             \Log::info('verifyLoginOtp: User logged in (TEMP BYPASS)', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-            $this->showRememberModal = true;
+            $this->step = 13;
             $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-            \Log::info('verifyLoginOtp: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+            \Log::info('verifyLoginOtp: showRememberPopup set, redirectUrl', [
+                'redirectUrl' => $this->redirectUrl,
+                'step' => $this->step,
+                'showWizard' => $this->showWizard,
+            ]);
             return;
         }
         $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
@@ -1238,9 +1282,13 @@ class WelcomeWizard extends Component
             if ($user) {
                 \Auth::login($user);
                 \Log::info('verifyLoginOtp: Supplier user logged in (TEMP BYPASS)', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                $this->showRememberModal = true;
+                $this->step = 13;
                 $this->redirectUrl = route('seller.home');
-                \Log::info('verifyLoginOtp: showRememberModal set, redirectUrl', ['redirectUrl' => $this->redirectUrl]);
+                \Log::info('verifyLoginOtp: showRememberPopup set, redirectUrl', [
+                    'redirectUrl' => $this->redirectUrl,
+                    'step' => $this->step,
+                    'showWizard' => $this->showWizard,
+                ]);
                 return;
             }
         }
@@ -1256,7 +1304,7 @@ class WelcomeWizard extends Component
     public function confirmRememberDeviceModal()
     {
         \Log::info('confirmRememberDeviceModal: called', [
-            'showRememberModal' => $this->showRememberModal,
+            'showRememberPopup' => $this->showRememberPopup,
             'redirectUrl' => $this->redirectUrl,
             'user' => Auth::user() ? [
                 'id' => Auth::user()->id,
@@ -1270,7 +1318,7 @@ class WelcomeWizard extends Component
             ]);
             \Cookie::queue($cookieName, '1', 60 * 24 * 30); // 30 days
         }
-        $this->showRememberModal = false;
+        $this->showRememberPopup = false;
         $this->rememberDeviceModalChecked = false;
         if ($this->redirectUrl) {
             $redirect = $this->redirectUrl;
