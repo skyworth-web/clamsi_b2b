@@ -12,7 +12,7 @@
     </div>
 
     <!-- Wizard Screen -->
-    <div class="container {{ $showWizard ? '' : 'hidden' }}">
+    <div class="container {{ ($showWizard && $step != 13) ? '' : 'hidden' }}">
         <div class="wizard-background">
             @if($errorMessage)
                 <div class="alert alert-danger">{{ $errorMessage }}</div>
@@ -165,7 +165,7 @@
                                                @paste="$wire.handlePaste($event, {{ $i }})"
                                                placeholder="0">
                                     @endfor
-                                    @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                                    @error('form.otp') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="d-flex justify-content-center align-content-center my-2">
                                     <div id="recaptcha-container"></div>
@@ -255,7 +255,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <input id="address" wire:model="form.address" placeholder="Address" rows="3"></input>
+                                <input id="address" wire:model="form.address" placeholder="Address">
                                 @error('form.address') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="form-group">
@@ -402,7 +402,7 @@
                                                @paste="$wire.handlePaste($event, {{ $i }})"
                                                placeholder="0">
                                     @endfor
-                                    @error('form.otp') <span class="error">{{ $message }}</span> @endif
+                                    @error('form.otp') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="d-flex justify-content-center align-content-center my-2">
                                     <div id="recaptcha-container"></div>
@@ -449,7 +449,7 @@
                             @if($errorMessage)
                                 <div class="error-message">{{ $errorMessage }}</div>
                             @endif
-                            <!-- No summary panel, no country code/mobile number -->
+                            
                             <div class="form-group">
                                 <label for="name">Full Name</label>
                                 <input id="name" type="text" wire:model="form.name" placeholder="Full Name">
@@ -539,37 +539,8 @@
         </div>
     </div>
 </div>
-@if($showRememberPopup)
-    <div class="modal-overlay" style="display: flex; z-index: 2000;">
-        <div class="modal-content wizard-center-text" style="max-width: 350px;">
-            <button wire:click="$set('showRememberPopup', false)" class="modal-close">×</button>
-            <div class="modal-header">
-                <h2>Device Remembered</h2>
-            </div>
-            <div class="modal-body">
-                <p>This device will be remembered for 30 days. You won't need to enter an OTP during this period.</p>
-                <button wire:click="$set('showRememberPopup', false)" class="submit-btn">OK</button>
-            </div>
-        </div>
-    </div>
-@endif
-@if($showRememberModal)
-    <div class="modal-overlay" style="display: flex; z-index: 2000;">
-        <div class="modal-content wizard-center-text" style="max-width: 350px;">
-            <div class="modal-header">
-                <h2>Remember This Device</h2>
-            </div>
-            <div class="modal-body">
-                <p>Would you like to remember this device for 30 days? You won't need to enter an OTP during this period.</p>
-                <div class="form-group terms-checkbox" style="margin-bottom: 10px;">
-                    <input id="remember_device_modal" type="checkbox" wire:model="rememberDeviceModalChecked">
-                    <label for="remember_device_modal">Remember This Device for 30 Days</label>
-                </div>
-                <button wire:click="confirmRememberDeviceModal" class="submit-btn">Continue</button>
-            </div>
-        </div>
-    </div>
-@endif
+
+
 <script defer>
     document.addEventListener("livewire:load", () => {
         // Listen for Livewire event to trigger focus change

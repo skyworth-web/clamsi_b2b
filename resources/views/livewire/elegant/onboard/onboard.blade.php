@@ -1,12 +1,5 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Laravel') }}</title>
-    @livewireStyles
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
+<div>
+    <!-- Styles and content previously in <head> -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -347,12 +340,12 @@
             background-color: #f0f0f0;
         }
         .select2-container--default .select2-selection--single {
-            height: 40px;
+            height: 40px !important;
             border: none;
             border-radius: 5px;
             background-color: #fff;
             color: #333;
-            display: flex;
+            display: flex !important;
             align-items: center;
             box-sizing: border-box;
         }
@@ -389,12 +382,40 @@
             border-radius: 5px;
         }
     </style>
-</head>
-<body>
-  <livewire:wizard.welcome-wizard />
+    @livewireStyles
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Main Livewire wizard component -->
+    <livewire:wizard.welcome-wizard />
+
+    <!-- Scripts and modal -->
     @livewireScripts
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Livewire.on('registration-success', function (data) {
+                window._redirectUrl = data.redirectUrl || '/';
+                showRememberDeviceModal();
+            });
+        });
+        function showRememberDeviceModal() {
+            document.getElementById('remember-device-modal').style.display = 'flex';
+        }
+        function rememberDeviceYes() {
+            // Set a cookie for 30 days
+            var d = new Date();
+            d.setTime(d.getTime() + (30*24*60*60*1000));
+            var expires = 'expires=' + d.toUTCString();
+            document.cookie = 'remember_device=1;' + expires + ';path=/';
+            redirectToMainPage();
+        }
+        function redirectToMainPage() {
+            document.getElementById('remember-device-modal').style.display = 'none';
+            var url = window._redirectUrl || '/';
+            window.location.href = url;
+        }
+    </script>
     <script>
         $(document).ready(function() {
             let initializedModals = {};
@@ -548,5 +569,18 @@
             });
         });
     </script>
-</body>
-</html>
+    <!-- Remember Device Modal: Always present in DOM -->
+    <div id="remember-device-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="redirectToMainPage()">×</button>
+            <div class="modal-header">
+                <h2>Remember Device for 30 days</h2>
+                <p class="step-indicator">Would you like to remember this device for 30 days?</p>
+            </div>
+            <div class="modal-body">
+                <button class="submit-btn" onclick="rememberDeviceYes()">Yes</button>
+                <button class="submit-btn" onclick="redirectToMainPage()">No</button>
+            </div>
+        </div>
+    </div>
+</div>
