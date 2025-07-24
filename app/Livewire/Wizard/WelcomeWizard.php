@@ -48,6 +48,7 @@ class WelcomeWizard extends Component
     public $otpVerifiedMobile = null; // Track which mobile was verified
     public $successMessage = '';
     public $redirectUrl = null;
+    public $rememberDevice = null; // Track remember device choice
 
     public function mount()
     {
@@ -967,7 +968,7 @@ class WelcomeWizard extends Component
 
         if ($httpCode >= 200 && $httpCode < 300 && isset($responseData['status']) && $responseData['status'] === 'approved') {
             $this->errorMessage = '';
-            $user = \App\Models\User::where('mobile', $mobile)->first();
+                $user = \App\Models\User::where('mobile', $mobile)->first();
             if ($user) {
                 Auth::login($user);
                 \Log::info('submitStep12: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
@@ -1078,6 +1079,7 @@ class WelcomeWizard extends Component
         ]);
         // Check for remember device cookie and skip OTP if present
         $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
+        \Log::info('[RememberDevice] Checking cookie', ['cookieName' => $cookieName, 'country_code' => $this->form['country_code'], 'mobile_number' => $this->form['mobile_number'], 'hasCookie' => request()->hasCookie($cookieName)]);
         if (request()->hasCookie($cookieName)) {
             $user = \App\Models\User::where('mobile', '+' . preg_replace('/\D/', '', (string) $this->form['country_code']) . preg_replace('/\D/', '', (string) $this->form['mobile_number']))->first();
             if ($user) {
@@ -1166,27 +1168,27 @@ class WelcomeWizard extends Component
         curl_close($ch);
         $responseData = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode < 300 && isset($responseData['status']) && $responseData['status'] === 'approved') {
-            $user = \App\Models\User::where('mobile', $mobile)->first();
+        $user = \App\Models\User::where('mobile', $mobile)->first();
+        if ($user) {
+            \Auth::login($user);
+                \Log::info('verifyLoginOtp: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id, 'rememberDevice' => $this->rememberDevice]);
+            $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
+            $this->dispatch('registration-success', message: 'Registration successful!', redirectUrl: $this->redirectUrl);
+            return;
+        }
+        $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
+        if ($supplier && $supplier->user_id) {
+            $user = \App\Models\User::find($supplier->user_id);
             if ($user) {
                 \Auth::login($user);
-                \Log::info('verifyLoginOtp: User logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+                    \Log::info('verifyLoginOtp: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id, 'rememberDevice' => $this->rememberDevice]);
                 $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
                 $this->dispatch('registration-success', message: 'Registration successful!', redirectUrl: $this->redirectUrl);
                 return;
             }
-            $supplier = DB::table('suppliers')->where('mobile_number', $mobile)->first();
-            if ($supplier && $supplier->user_id) {
-                $user = \App\Models\User::find($supplier->user_id);
-                if ($user) {
-                    \Auth::login($user);
-                    \Log::info('verifyLoginOtp: Supplier user logged in', ['user_id' => $user->id, 'role_id' => $user->role_id]);
-                    $this->redirectUrl = $user->role_id == 4 ? route('seller.home') : route('home');
-                    $this->dispatch('registration-success', message: 'Registration successful!', redirectUrl: $this->redirectUrl);
-                    return;
-                }
-            }
-            $this->errorMessage = 'No account found for this mobile number.';
-            return;
+        }
+        $this->errorMessage = 'No account found for this mobile number.';
+        return;
         } else {
             $this->otpTries++;
             $this->errorMessage = 'Invalid OTP. Please try again.';
@@ -1267,5 +1269,13 @@ class WelcomeWizard extends Component
         } else {
             return redirect()->route('home');
         }
+    }
+
+    // Add a Livewire method to set remember device
+    public function setRememberDevice($value)
+    {
+        $this->rememberDevice = $value ? true : false;
+        session(['remember_device' => $this->rememberDevice]);
+        \Log::info('[RememberDevice] setRememberDevice called', ['rememberDevice' => $this->rememberDevice]);
     }
 }

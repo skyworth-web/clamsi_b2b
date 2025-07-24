@@ -403,10 +403,11 @@
             document.getElementById('remember-device-modal').style.display = 'flex';
         }
         function rememberDeviceYes() {
-            // Set a cookie for 30 days for this device (country_code + mobile_number)
-            var countryCode = Livewire.find(document.querySelector('[wire\:id]').getAttribute('wire:id')).get('form.country_code');
-            var mobileNumber = Livewire.find(document.querySelector('[wire\:id]').getAttribute('wire:id')).get('form.mobile_number');
+            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
+            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
+            console.log('[RememberDevice] YES clicked. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
             if (!countryCode || !mobileNumber) {
+                console.log('[RememberDevice] Missing countryCode or mobileNumber.');
                 redirectToMainPage();
                 return;
             }
@@ -416,9 +417,42 @@
             d.setTime(d.getTime() + (30*24*60*60*1000));
             var expires = 'expires=' + d.toUTCString();
             document.cookie = cookieName + '=1;' + expires + ';path=/';
-            redirectToMainPage();
+            console.log('[RememberDevice] Set cookie:', cookieName, 'expires:', expires);
+            // Call Livewire to set rememberDevice true
+            window.Livewire.find(window.Livewire.first().id).setRememberDevice(true);
+            setTimeout(redirectToMainPage, 200); // Give Livewire a moment
+        }
+        function rememberDeviceNo() {
+            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
+            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
+            console.log('[RememberDevice] NO clicked or modal closed. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
+            document.cookie = 'remember_device=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            console.log('[RememberDevice] Deleted cookie: remember_device');
+            if (countryCode && mobileNumber) {
+                var hash = md5(countryCode + mobileNumber);
+                var cookieName = 'remember_device_' + hash;
+                document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                console.log('[RememberDevice] Deleted cookie:', cookieName);
+            }
+            // Call Livewire to set rememberDevice false
+            window.Livewire.find(window.Livewire.first().id).setRememberDevice(false);
+            setTimeout(redirectToMainPage, 200);
         }
         function redirectToMainPage() {
+            // Remove all remember_device cookies for this device
+            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
+            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
+            console.log('[RememberDevice] NO clicked or modal closed. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
+            // Remove old generic cookie
+            document.cookie = 'remember_device=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            console.log('[RememberDevice] Deleted cookie: remember_device');
+            // Remove hashed cookie if possible
+            if (countryCode && mobileNumber) {
+                var hash = md5(countryCode + mobileNumber);
+                var cookieName = 'remember_device_' + hash;
+                document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                console.log('[RememberDevice] Deleted cookie:', cookieName);
+            }
             document.getElementById('remember-device-modal').style.display = 'none';
             var url = window._redirectUrl || '/';
             window.location.href = url;
@@ -592,14 +626,14 @@
     <!-- Remember Device Modal: Always present in DOM -->
     <div id="remember-device-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <button class="modal-close" onclick="redirectToMainPage()">×</button>
+            <button class="modal-close" onclick="rememberDeviceNo()">×</button>
             <div class="modal-header">
                 <h2>Remember Device for 30 days</h2>
                 <p class="step-indicator">Would you like to remember this device for 30 days?</p>
             </div>
             <div class="modal-body">
                 <button class="submit-btn" onclick="rememberDeviceYes()">Yes</button>
-                <button class="submit-btn" onclick="redirectToMainPage()">No</button>
+                <button class="submit-btn" onclick="rememberDeviceNo()">No</button>
             </div>
         </div>
     </div>
