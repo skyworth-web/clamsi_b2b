@@ -403,17 +403,37 @@
             document.getElementById('remember-device-modal').style.display = 'flex';
         }
         function rememberDeviceYes() {
-            // Set a cookie for 30 days
+            // Set a cookie for 30 days for this device (country_code + mobile_number)
+            var countryCode = Livewire.find(document.querySelector('[wire\:id]').getAttribute('wire:id')).get('form.country_code');
+            var mobileNumber = Livewire.find(document.querySelector('[wire\:id]').getAttribute('wire:id')).get('form.mobile_number');
+            if (!countryCode || !mobileNumber) {
+                redirectToMainPage();
+                return;
+            }
+            var hash = md5(countryCode + mobileNumber);
+            var cookieName = 'remember_device_' + hash;
             var d = new Date();
             d.setTime(d.getTime() + (30*24*60*60*1000));
             var expires = 'expires=' + d.toUTCString();
-            document.cookie = 'remember_device=1;' + expires + ';path=/';
+            document.cookie = cookieName + '=1;' + expires + ';path=/';
             redirectToMainPage();
         }
         function redirectToMainPage() {
             document.getElementById('remember-device-modal').style.display = 'none';
             var url = window._redirectUrl || '/';
             window.location.href = url;
+        }
+        // Simple JS implementation of md5 (for cookie name hash)
+        function md5(str) {
+            // Use a simple hash for demonstration (not cryptographically secure)
+            var hash = 0, i, chr;
+            if (str.length === 0) return hash.toString();
+            for (i = 0; i < str.length; i++) {
+                chr   = str.charCodeAt(i);
+                hash  = ((hash << 5) - hash) + chr;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return Math.abs(hash).toString();
         }
     </script>
     <script>

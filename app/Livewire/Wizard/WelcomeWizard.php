@@ -1079,7 +1079,7 @@ class WelcomeWizard extends Component
         // Check for remember device cookie and skip OTP if present
         $cookieName = 'remember_device_' . md5($this->form['country_code'] . $this->form['mobile_number']);
         if (request()->hasCookie($cookieName)) {
-            $user = \App\Models\User::where('mobile', '+' . preg_replace('/\\D/', '', (string) $this->form['country_code']) . preg_replace('/\\D/', '', (string) $this->form['mobile_number']))->first();
+            $user = \App\Models\User::where('mobile', '+' . preg_replace('/\D/', '', (string) $this->form['country_code']) . preg_replace('/\D/', '', (string) $this->form['mobile_number']))->first();
             if ($user) {
                 \Auth::login($user);
                 \Log::info('sendLoginOtp: User logged in via cookie', ['user_id' => $user->id, 'role_id' => $user->role_id]);
@@ -1088,8 +1088,8 @@ class WelcomeWizard extends Component
                 return;
             }
         }
-        $countryCode = preg_replace('/\\D/', '', (string) $this->form['country_code']);
-        $mobileNumber = preg_replace('/\\D/', '', (string) $this->form['mobile_number']);
+        $countryCode = preg_replace('/\D/', '', (string) $this->form['country_code']);
+        $mobileNumber = preg_replace('/\D/', '', (string) $this->form['mobile_number']);
         $mobile = '+' . $countryCode . $mobileNumber;
         if ($countryCode === '357' && strlen($mobileNumber) > 8) {
             $mobileNumber = substr($mobileNumber, 0, 8);
@@ -1193,7 +1193,6 @@ class WelcomeWizard extends Component
             $this->successMessage = '';
         }
     }
-
     private function resetForm()
     {
         $this->form = array_fill_keys(array_keys($this->form), '');

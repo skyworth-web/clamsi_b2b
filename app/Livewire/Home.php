@@ -24,6 +24,9 @@ class Home extends Component
     {
         if (!Auth::check()) {
             $this->redirectRoute('onboard');
+        } else if (Auth::user()->role_id == 4) {
+            // Supplier role, redirect to seller dashboard
+            return redirect()->route('seller.home');
         }
     }
     
