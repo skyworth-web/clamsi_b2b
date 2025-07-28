@@ -476,13 +476,85 @@
 
             function initializeSelect2($select, model) {
                 if (!$select.hasClass('select2-hidden-accessible')) {
-                    $select.select2({
+                    // Check if this is a country code select
+                    const isCountryCodeSelect = $select.attr('id') === 'country_code_select';
+                    console.log('Initializing Select2 for:', $select.attr('id'), 'isCountryCodeSelect:', isCountryCodeSelect);
+                    
+                    // Get the current value from the select element
+                    const currentValue = $select.val();
+                    console.log('Current select value:', currentValue);
+                    
+                    const select2Config = {
                         placeholder: 'Select an option',
                         allowClear: true,
                         width: '100%',
                         dropdownAutoWidth: false,
-                        minimumResultsForSearch: 10,
-                        templateResult: function(data) {
+                        minimumResultsForSearch: isCountryCodeSelect ? 0 : 10
+                    };
+
+                    if (isCountryCodeSelect) {
+                        // Custom configuration for country code select
+                        select2Config.templateResult = function(data) {
+                            if (!data.text || !data.element) return null;
+                            
+                            const countryName = $(data.element).data('country-name');
+                            const countryCode = $(data.element).data('country-code');
+                            
+                            if (countryName && countryCode) {
+                                return $('<span>').html(
+                                    '<strong>+' + countryCode + '</strong> - ' + countryName
+                                ).css({
+                                    'white-space': 'nowrap',
+                                    'overflow': 'hidden',
+                                    'text-overflow': 'ellipsis',
+                                    'max-width': '280px'
+                                });
+                            }
+                            
+                            return $('<span>').text(data.text).css({
+                                'white-space': 'nowrap',
+                                'overflow': 'hidden',
+                                'text-overflow': 'ellipsis',
+                                'max-width': '280px'
+                            });
+                        };
+                        
+                        select2Config.templateSelection = function(data) {
+                            if (!data.text) return data.text;
+                            // Show only the country code when selected
+                            return $('<span>').text(data.text).css({
+                                'white-space': 'nowrap',
+                                'overflow': 'hidden',
+                                'text-overflow': 'ellipsis',
+                                'max-width': '280px'
+                            });
+                        };
+                        
+                        // Custom matcher for searching by both country code and name
+                        select2Config.matcher = function(params, data) {
+                            if (!params.term) {
+                                return data;
+                            }
+                            
+                            const term = params.term.toLowerCase();
+                            const countryName = $(data.element).data('country-name') || '';
+                            const countryCode = $(data.element).data('country-code') || '';
+                            
+                            // Ensure both values are strings before calling toLowerCase()
+                            const countryNameStr = String(countryName).toLowerCase();
+                            const countryCodeStr = String(countryCode).toLowerCase();
+                            
+                            if (countryNameStr.indexOf(term) > -1 || 
+                                countryCodeStr.indexOf(term) > -1 ||
+                                ('+' + countryCodeStr).indexOf(term) > -1) {
+                                return data;
+                            }
+                            
+                            return null;
+                        };
+                    } else {
+                        // Default configuration for other selects
+                        select2Config.templateResult = function(data) {
                             if (!data.text) return null;
                             return $('<span>').text(data.text).css({
                                 'white-space': 'nowrap',
@@ -490,8 +562,9 @@
                                 'text-overflow': 'ellipsis',
                                 'max-width': '280px'
                             });
-                        },
-                        templateSelection: function(data) {
+                        };
+                        
+                        select2Config.templateSelection = function(data) {
                             if (!data.text) return data.text;
                             return $('<span>').text(data.text).css({
                                 'white-space': 'nowrap',
@@ -499,11 +572,28 @@
                                 'text-overflow': 'ellipsis',
                                 'max-width': '280px'
                             });
-                        }
-                    });
+                        };
+                    }
+
+                    $select.select2(select2Config);
+
+                    // Sync the Select2 value with the current form state
+                    if (currentValue) {
+                        console.log('Setting Select2 value to:', currentValue);
+                        $select.val(currentValue).trigger('change');
+                    }
 
                     $select.on('change', function() {
-                        Livewire.dispatch('updateFormField', { field: model, value: $(this).val() });
+                        const value = $(this).val();
+                        console.log('Select2 change detected:', { field: model, value: value, selectId: $select.attr('id') });
+                        
+                        // Update the wire:model directly
+                        const wireModel = $select.attr('wire:model') || $select.attr('wire:model.debounce.500ms');
+                        if (wireModel) {
+                            console.log('Updating wire:model:', wireModel, 'with value:', value);
+                            // Trigger Livewire to update the model
+                            Livewire.dispatch('updateFormField', { field: wireModel, value: value });
+                        }
                     });
                 }
             }
@@ -514,6 +604,10 @@
                         let $select = $('#' + selectId);
                         let model = $select.attr('wire:model') || $select.attr('wire:model.debounce.500ms');
                         if ($select.length && model) {
+                            // Destroy existing Select2 if it exists
+                            if ($select.hasClass('select2-hidden-accessible')) {
+                                $select.select2('destroy');
+                            }
                             initializeSelect2($select, model.replace('form.', '')); // Remove 'form.' prefix
                         }
                     });
@@ -521,6 +615,7 @@
                 }
             }
 
+            // Initialize selects when modal is shown
             $(document).on('focus', '.modal-overlay', function() {
                 let modalId = $(this).attr('id');
                 let selectIds = [];
@@ -538,14 +633,52 @@
                         selectIds = ['buyer_country_id_select'];
                         break;
                     case 'buyer-step2-modal':
-                        selectIds = ['buyer_country_select'];
+                        selectIds = ['country_code_select'];
                         break;
                     case 'buyer-step3-modal':
                         selectIds = ['buyer_final_country_select'];
                         break;
+                    case 'login-modal':
+                        selectIds = ['country_code_select'];
+                        break;
                 }
                 if (selectIds.length > 0) {
                     initializeModalSelects(modalId, selectIds);
+                }
+            });
+
+            // Also initialize when modal becomes visible
+            $(document).on('shown', '.modal-overlay', function() {
+                let modalId = $(this).attr('id');
+                let selectIds = [];
+                switch (modalId) {
+                    case 'supplier-modal':
+                        selectIds = ['country_id_select'];
+                        break;
+                    case 'supplier-step2-modal':
+                        selectIds = ['country_code_select'];
+                        break;
+                    case 'supplier-step5-modal':
+                        selectIds = ['country_select'];
+                        break;
+                    case 'buyer-modal':
+                        selectIds = ['buyer_country_id_select'];
+                        break;
+                    case 'buyer-step2-modal':
+                        selectIds = ['country_code_select'];
+                        break;
+                    case 'buyer-step3-modal':
+                        selectIds = ['buyer_final_country_select'];
+                        break;
+                    case 'login-modal':
+                        selectIds = ['country_code_select'];
+                        break;
+                }
+                if (selectIds.length > 0) {
+                    // Small delay to ensure DOM is ready
+                    setTimeout(function() {
+                        initializeModalSelects(modalId, selectIds);
+                    }, 100);
                 }
             });
 
@@ -556,6 +689,158 @@
                         $(this).trigger('focus');
                     }
                 });
+            });
+
+            // Initialize selects when step updates
+            Livewire.on('update-step', function() {
+                setTimeout(function() {
+                    $('.modal-overlay:visible').each(function() {
+                        let modalId = $(this).attr('id');
+                        let selectIds = [];
+                        switch (modalId) {
+                            case 'supplier-modal':
+                                selectIds = ['country_id_select'];
+                                break;
+                            case 'supplier-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'supplier-step5-modal':
+                                selectIds = ['country_select'];
+                                break;
+                            case 'buyer-modal':
+                                selectIds = ['buyer_country_id_select'];
+                                break;
+                            case 'buyer-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'buyer-step3-modal':
+                                selectIds = ['buyer_final_country_select'];
+                                break;
+                            case 'login-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                        }
+                        if (selectIds.length > 0) {
+                            initializeModalSelects(modalId, selectIds);
+                        }
+                    });
+                }, 200);
+            });
+
+            // Listen for form state updates
+            Livewire.on('formStateUpdated', function(data) {
+                console.log('Form state updated:', data.form);
+                // Update Select2 values if needed
+                setTimeout(function() {
+                    $('.modal-overlay:visible').each(function() {
+                        let modalId = $(this).attr('id');
+                        let selectIds = [];
+                        switch (modalId) {
+                            case 'supplier-modal':
+                                selectIds = ['country_id_select'];
+                                break;
+                            case 'supplier-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'supplier-step5-modal':
+                                selectIds = ['country_select'];
+                                break;
+                            case 'buyer-modal':
+                                selectIds = ['buyer_country_id_select'];
+                                break;
+                            case 'buyer-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'buyer-step3-modal':
+                                selectIds = ['buyer_final_country_select'];
+                                break;
+                            case 'login-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                        }
+                        if (selectIds.length > 0) {
+                            selectIds.forEach(function(selectId) {
+                                let $select = $('#' + selectId);
+                                if ($select.length && $select.hasClass('select2-hidden-accessible')) {
+                                    const formValue = data.form[selectId.replace('_select', '')] || data.form['country_code'];
+                                    if (formValue && $select.val() !== formValue) {
+                                        console.log('Syncing Select2 value:', selectId, 'to:', formValue);
+                                        $select.val(formValue).trigger('change');
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }, 100);
+            });
+
+            // Initialize selects after any Livewire update
+            Livewire.on('updated', function() {
+                setTimeout(function() {
+                    $('.modal-overlay:visible').each(function() {
+                        let modalId = $(this).attr('id');
+                        let selectIds = [];
+                        switch (modalId) {
+                            case 'supplier-modal':
+                                selectIds = ['country_id_select'];
+                                break;
+                            case 'supplier-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'supplier-step5-modal':
+                                selectIds = ['country_select'];
+                                break;
+                            case 'buyer-modal':
+                                selectIds = ['buyer_country_id_select'];
+                                break;
+                            case 'buyer-step2-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                            case 'buyer-step3-modal':
+                                selectIds = ['buyer_final_country_select'];
+                                break;
+                            case 'login-modal':
+                                selectIds = ['country_code_select'];
+                                break;
+                        }
+                        if (selectIds.length > 0) {
+                            initializeModalSelects(modalId, selectIds);
+                        }
+                    });
+                }, 100);
+            });
+
+            // Mutation observer to watch for DOM changes and re-initialize Select2
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        // Check if any country code selects were added
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                const countryCodeSelects = node.querySelectorAll ? node.querySelectorAll('#country_code_select') : [];
+                                if (countryCodeSelects.length > 0) {
+                                    setTimeout(function() {
+                                        countryCodeSelects.forEach(function(select) {
+                                            const $select = $(select);
+                                            if (!$select.hasClass('select2-hidden-accessible')) {
+                                                const model = $select.attr('wire:model') || $select.attr('wire:model.debounce.500ms');
+                                                if (model) {
+                                                    initializeSelect2($select, model.replace('form.', ''));
+                                                }
+                                            }
+                                        });
+                                    }, 50);
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Start observing
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
             });
 
             // Handle OTP focus

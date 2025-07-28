@@ -109,8 +109,10 @@
                                     <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                         <option value="">Select country code</option>
                                         @foreach($countries as $country)
-                                            <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
-                                                {{ $country->phonecode }} ({{ $country->name }})
+                                            <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }} 
+                                                data-country-name="{{ $country->name }}" 
+                                                data-country-code="{{ $country->phonecode }}">
+                                                +{{ $country->phonecode }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -347,8 +349,10 @@
                                 <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                     <option value="">Select country code</option>
                                     @foreach($countries as $country)
-                                        <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
-                                            {{ $country->phonecode }} ({{ $country->name }})
+                                        <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }} 
+                                            data-country-name="{{ $country->name }}" 
+                                            data-country-code="{{ $country->phonecode }}">
+                                            +{{ $country->phonecode }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -495,8 +499,10 @@
                                         <select wire:model="form.country_code" class="country-code select2 form-control" id="country_code_select">
                                             <option value="">Select country code</option>
                                             @foreach($countries as $country)
-                                                <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }}>
-                                                    {{ $country->phonecode }} ({{ $country->name }})
+                                                <option value="{{ $country->phonecode }}" {{ $form['country_code'] == $country->phonecode ? 'selected' : '' }} 
+                                                    data-country-name="{{ $country->name }}" 
+                                                    data-country-code="{{ $country->phonecode }}">
+                                                    +{{ $country->phonecode }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -506,7 +512,7 @@
                                     </div>
                                     @error('form.country_code') <span class="error">{{ $message }}</span> @enderror
                                 </div>
-                                <button wire:click="sendLoginOtp" class="submit-btn">Send OTP</button>
+                                <button wire:click="sendLoginOtp" class="submit-btn" onclick="syncFormStateBeforeSubmit()">Send OTP</button>
                             @else
                                 @if($successMessage)
                                     <div class="alert alert-success">{{ $successMessage }}</div>
@@ -551,4 +557,33 @@
             }
         });
     });
+
+    // Function to sync form state before submitting
+    function syncFormStateBeforeSubmit() {
+        const countryCodeSelect = document.getElementById('country_code_select');
+        const mobileNumberInput = document.querySelector('input[wire\\:model="form.mobile_number"]');
+        
+        if (countryCodeSelect && mobileNumberInput) {
+            const countryCode = countryCodeSelect.value;
+            const mobileNumber = mobileNumberInput.value;
+            
+            console.log('Syncing form state before submit:', {
+                countryCode: countryCode,
+                mobileNumber: mobileNumber
+            });
+            
+            // Update the form state via Livewire
+            if (countryCode || mobileNumber) {
+                Livewire.dispatch('syncFormState', { 
+                    countryCode: countryCode, 
+                    mobileNumber: mobileNumber 
+                });
+            }
+            
+            // Small delay to ensure the form state is updated before submitting
+            setTimeout(() => {
+                console.log('Form state synced, proceeding with OTP send');
+            }, 100);
+        }
+    }
 </script>

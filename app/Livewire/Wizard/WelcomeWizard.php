@@ -70,6 +70,12 @@ class WelcomeWizard extends Component
 
     public function detectUserLocation()
     {
+        // Only detect location if no country code is already set
+        if (!empty($this->form['country_code'])) {
+            \Log::info('Country code already set, skipping location detection:', ['country_code' => $this->form['country_code']]);
+            return;
+        }
+
         $clientIp = request()->ip();
         if (!$clientIp || $clientIp === '127.0.0.1') {
             $clientIp = request()->header('CF-Connecting-IP')
@@ -1064,6 +1070,39 @@ class WelcomeWizard extends Component
     public function sendLoginOtp()
     {
         $this->successMessage = '';
+        
+        // Force refresh form state from request
+        if (request()->has('form.country_code')) {
+            $this->form['country_code'] = request()->input('form.country_code');
+        }
+        if (request()->has('form.mobile_number')) {
+            $this->form['mobile_number'] = request()->input('form.mobile_number');
+        }
+        
+        // Also check for direct form data
+        if (request()->has('country_code')) {
+            $this->form['country_code'] = request()->input('country_code');
+        }
+        if (request()->has('mobile_number')) {
+            $this->form['mobile_number'] = request()->input('mobile_number');
+        }
+        
+        // Force update from any JavaScript-sent data
+        if (request()->has('data.countryCode')) {
+            $this->form['country_code'] = request()->input('data.countryCode');
+        }
+        if (request()->has('data.mobileNumber')) {
+            $this->form['mobile_number'] = request()->input('data.mobileNumber');
+        }
+        
+        // Debug: Log the current form state
+        \Log::info('sendLoginOtp: Current form state', [
+            'country_code' => $this->form['country_code'],
+            'mobile_number' => $this->form['mobile_number'],
+            'request_data' => request()->all(),
+            'full_form' => $this->form
+        ]);
+        
         // Check resend timer
         if ($this->otpSentAt && now()->diffInSeconds($this->otpSentAt) < $this->otpResendTimeout) {
             $this->errorMessage = 'Please wait before resending OTP.';
@@ -1223,6 +1262,57 @@ class WelcomeWizard extends Component
                 $this->successMessage = '';
             }
         }
+    }
+
+    public function updateFormField($field, $value)
+    {
+        \Log::info('updateFormField called:', ['field' => $field, 'value' => $value]);
+        
+        if (strpos($field, 'form.') === 0) {
+            $field = substr($field, 5); // Remove 'form.' prefix
+        }
+        
+        if (isset($this->form[$field])) {
+            $oldValue = $this->form[$field];
+            $this->form[$field] = $value;
+            \Log::info('Form field updated:', [
+                'field' => $field, 
+                'old_value' => $oldValue,
+                'new_value' => $value, 
+                'form_country_code' => $this->form['country_code']
+            ]);
+        } else {
+            \Log::warning('Form field not found:', ['field' => $field, 'available_fields' => array_keys($this->form)]);
+        }
+    }
+
+    #[On('updateFormField')]
+    public function handleUpdateFormField($field, $value)
+    {
+        $this->updateFormField($field, $value);
+    }
+
+    #[On('refreshFormState')]
+    public function refreshFormState()
+    {
+        \Log::info('Form state refreshed:', ['form' => $this->form]);
+        $this->dispatch('formStateUpdated', form: $this->form);
+    }
+
+    #[On('syncFormState')]
+    public function syncFormState($countryCode = null, $mobileNumber = null)
+    {
+        if ($countryCode) {
+            $this->form['country_code'] = $countryCode;
+        }
+        if ($mobileNumber) {
+            $this->form['mobile_number'] = $mobileNumber;
+        }
+        
+        \Log::info('Form state synced:', [
+            'country_code' => $this->form['country_code'],
+            'mobile_number' => $this->form['mobile_number']
+        ]);
     }
 
     public function render()
