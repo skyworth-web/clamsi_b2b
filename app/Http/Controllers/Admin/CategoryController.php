@@ -1027,6 +1027,10 @@ class CategoryController extends Controller
 
     public function deleteWithProducts(Request $request)
     {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return response()->json(['error' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
+        }
         $categoryId = $request->input('category_id');
         $moveToCategoryId = $request->input('move_to_category_id');
         $deleteProducts = $request->input('delete_products');

@@ -13,7 +13,7 @@
                             <p class="mb-0" style="color: #15803d;">Configure your product upload settings</p>
                         </div>
                         <button class="btn rounded-pill px-4 shadow-sm" style="background-color:rgba(51, 196, 104, 0.96); color: white; border: none;">
-                            <i class="bi bi-save me-2"></i>Save & Continue
+                            <i class="bi bi-save me-2"></i>Save & Continues
                         </button>
                     </div>
                 </div>
@@ -94,10 +94,11 @@
                                         </small>
                                     </div>
                                     <div id="image-preview-grid" class="d-flex flex-wrap gap-3 mb-4"></div>
-                                    <input type="file" id="image-files" name="image_files" class="d-none" accept="image/*" multiple />
+                                    <input type="file" id="image-files" name="image_files" class="d-none" accept="image/*" multiple aria-label="Upload product images" />
                                     <div class="d-flex gap-3 mt-auto">
                                         <button type="button" class="btn rounded-pill px-4 shadow-sm" onclick="triggerImageInput()" 
-                                            style="background-color: white; color:rgb(86, 230, 139); border: 1px solid #86efac;">
+                                            style="background-color: white; color:rgb(86, 230, 139); border: 1px solid #86efac;"
+                                            aria-label="Add product images">
                                             <i class="bi bi-upload me-2"></i>Add Images
                                         </button>
                                         <button id="upload-images-btn" class="btn rounded-pill px-4 shadow-sm" onclick="submitImages()" style="display:none; background-color: #22c55e; color: white;">
@@ -115,9 +116,10 @@
                                     </h5>
                                 </div>
                                 <div class="card-body excel-upload-card-body">
-                                    <input type="file" id="excel-upload" name="excel_upload" accept=".xls,.xlsx" class="d-none" />
+                                    <input type="file" id="excel-upload" name="excel_upload" accept=".xls,.xlsx" class="d-none" aria-label="Upload Excel file for prices and stock" />
                                     <div class="d-flex gap-3 align-items-center mb-3">
-                                        <button type="button" class="btn rounded-pill px-4 shadow-sm" id="open-excel-btn" style="background-color: white; color: #22c55e; border: 1px solid #86efac;">
+                                        <button type="button" class="btn rounded-pill px-4 shadow-sm" id="open-excel-btn" style="background-color: white; color: #22c55e; border: 1px solid #86efac;"
+                                            aria-label="Open Excel file for prices and stock">
                                             <i class="bi bi-folder2-open me-2"></i>Open Excel
                                         </button>
                                         <button type="button" class="btn rounded-pill px-4 shadow-sm" id="upload-excel-btn" style="background-color: #22c55e; color: white;" disabled>
@@ -140,24 +142,28 @@
                                 <div class="card-body d-flex flex-column ai-assistant-card-body" style="background-color: #dcfce7;">
                                     <!-- AI Tools -->
                                     <div class="mb-4">
-                                        <button class="btn btn-sm rounded-pill mb-2 shadow-sm" onclick="tagProductCategory()" 
-                                            style="background-color: white; color: #854d0e; border: 1px solid #86efac;">
-                                            <i class="bi bi-tag-fill me-1"></i>Show Category & Style Tags
+                                        <button class="btn btn-sm rounded-pill mb-2 shadow-sm" onclick="tagProductImages()" 
+                                            style="background-color: white; color: #854d0e; border: 1px solid #86efac;"
+                                            aria-label="Tag product images using AI">
+                                            <i class="bi bi-tag-fill me-1"></i>Tag Images with AI
                                         </button>
                                         <div class="d-flex gap-2 mb-3">
                                             <button class="btn btn-sm rounded-pill shadow-sm" onclick="organizeByStyle()" 
-                                                style="background-color: white; color: #22c55e; border: 1px solid #86efac;">
+                                                style="background-color: white; color: #22c55e; border: 1px solid #86efac;"
+                                                aria-label="Organize images by style">
                                                 <i class="bi bi-funnel-fill me-1"></i>Organize By Style
                                             </button>
                                             <button class="btn btn-sm rounded-pill shadow-sm" onclick="sortByStyle()" 
-                                                style="background-color: white; color:rgb(39, 197, 97); border: 1px solid #86efac;">
+                                                style="background-color: white; color:rgb(39, 197, 97); border: 1px solid #86efac;"
+                                                aria-label="Sort images by style">
                                                 <i class="bi bi-filter-square-fill me-1"></i>Sort By Style
                                             </button>
                                         </div>
-                                        <button class="btn w-100 rounded-pill mb-3 shadow" onclick="startAISorting()" 
-                                            style="background-color:rgba(77, 207, 125, 0.93); color: white; border: none;">
-                                            <i class="bi bi-magic me-1"></i>Start AI Sorting 
-                                            <span class="badge ms-2" style="background-color: white; color: #22c55e;">€0.20/item</span>
+                                        <button class="btn w-100 rounded-pill mb-3 shadow" onclick="tagBatchImages()" 
+                                            style="background-color:rgba(77, 207, 125, 0.93); color: white; border: none;"
+                                            aria-label="Tag all images in batch using AI">
+                                            <i class="bi bi-magic me-1"></i>Tag All Images 
+                                            <span class="badge ms-2" style="background-color: white; color: #22c55e;">Free</span>
                                         </button>
                                     </div>
 
@@ -174,10 +180,12 @@
                                         <div class="position-relative">
                                             <textarea class="form-control ps-4 pe-5" id="ai-chat-question" name="ai_chat_question" 
                                                 rows="2" placeholder="Ask about product variants, sizes, or other details..."
+                                                autocomplete="off"
                                                 style="border-radius: 20px; border-color: #86efac;"></textarea>
                                             <button class="btn rounded-circle position-absolute end-0 top-0 me-2 mt-2 shadow-sm" 
                                                 type="button" id="ai-chat-send-btn" onclick="sendAIChat()"
-                                                style="width: 36px; height: 36px; background-color: #22c55e; color: white; border: none;">
+                                                style="width: 36px; height: 36px; background-color: #22c55e; color: white; border: none;"
+                                                aria-label="Send AI chat message">
                                                 <i class="bi bi-send-fill"></i>
                                             </button>
                                         </div>
@@ -229,22 +237,17 @@ function renderImagePreviews(showTags = false) {
 
     // If tagging is enabled, only show current batch with tags
     let filesToShow = allFiles;
-    let showCategorization = false;
-    let categorizationMap = {};
+    let showTagging = false;
+    let taggingMap = {};
     
-    // Check if we have AI categorization result (for sorting or tagging)
-    if (window.aiCategorizationResult && window.aiCategorizationResult.length) {
-        // Only show current batch when AI categorization is available
+    // Check if we have image tagging results
+    if (window.imageTaggingResults && Object.keys(window.imageTaggingResults).length) {
+        // Only show current batch when image tagging is available
         filesToShow = window.getCurrentUploadBatch();
         
         if (showTags) {
-            showCategorization = true;
-            // Build a map: name/id/product_id -> categorization
-            window.aiCategorizationResult.forEach(item => {
-                if (item.name) categorizationMap[item.name] = item;
-                if (item.id) categorizationMap[item.id] = item;
-                if (item.product_id) categorizationMap[item.product_id] = item;
-            });
+            showTagging = true;
+            taggingMap = window.imageTaggingResults;
         }
     }
 
@@ -262,42 +265,28 @@ function renderImagePreviews(showTags = false) {
         box.style.justifyContent = 'center';
         box.style.background = '#fafafa';
         let badgeHtml = '';
-        if (showCategorization) {
-            // Try to match by product_id, id, or name
-            let key = file.product_id || file.id || file.name;
-            let cat = categorizationMap[key];
-            if (cat) {
-                // Get category value
-                let categoryValue = cat.category_name || cat.category || cat.category_id || cat.suggested_category_id;
-                // If categoryValue is a JSON string, decode and get 'en' or first value
-                if (typeof categoryValue === 'string' && categoryValue.trim().startsWith('{')) {
-                    try {
-                        let decoded = JSON.parse(categoryValue);
-                        if (typeof decoded === 'object' && decoded !== null) {
-                            categoryValue = decoded['en'] || Object.values(decoded)[0] || categoryValue;
-                        }
-                    } catch (e) {}
-                }
-                
-                // Get style value
-                let styleValue = cat.style_tag || cat.style || '';
-                
-                // Build badges HTML
+        if (showTagging) {
+            // Get tags for this product
+            let productTags = taggingMap[file.id];
+            if (productTags && productTags.length > 0) {
+                // Show top 3 tags by confidence
+                let topTags = productTags.slice(0, 3);
                 let badges = [];
-                if (categoryValue) {
-                    badges.push(`<span class='badge bg-info text-dark mt-1 me-1'>${escapeHtml(categoryValue)}</span>`);
-                }
-                if (styleValue) {
-                    badges.push(`<span class='badge bg-warning text-dark mt-1'>${escapeHtml(styleValue)}</span>`);
-                }
                 
-                if (badges.length > 0) {
-                    badgeHtml = badges.join('');
-                } else {
-                    badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
-                }
+                topTags.forEach(tag => {
+                    let badgeClass = 'bg-info text-dark';
+                    if (tag.type === 'fashion') {
+                        badgeClass = 'bg-warning text-dark';
+                    } else if (tag.type === 'color') {
+                        badgeClass = 'bg-success text-white';
+                    }
+                    
+                    badges.push(`<span class='badge ${badgeClass} mt-1 me-1' title="Confidence: ${Math.round(tag.confidence * 100)}%">${escapeHtml(tag.name)}</span>`);
+                });
+                
+                badgeHtml = badges.join('');
             } else {
-                badgeHtml = `<span class='badge bg-secondary mt-1'>Uncategorized</span>`;
+                badgeHtml = `<span class='badge bg-secondary mt-1'>No tags</span>`;
             }
         }
         box.innerHTML = `
@@ -308,7 +297,7 @@ function renderImagePreviews(showTags = false) {
         grid.appendChild(box);
     });
     // Add "+" box only if not tagging and not in sorting mode
-    if (!showTags && !(window.aiCategorizationResult && window.aiCategorizationResult.length)) {
+    if (!showTags && !(window.imageTaggingResults && Object.keys(window.imageTaggingResults).length)) {
         const plusBox = document.createElement('div');
         plusBox.className = 'border rounded p-2';
         plusBox.style.width = '110px';
@@ -325,7 +314,7 @@ function renderImagePreviews(showTags = false) {
     // Show Reset button if tagging/sorting is active
     const resetBtn = document.getElementById('reset-order-btn');
     if (resetBtn) {
-        resetBtn.style.display = (showTags || (window.aiCategorizationResult && window.aiCategorizationResult.length)) ? 'inline-block' : 'none';
+        resetBtn.style.display = (showTags || (window.imageTaggingResults && Object.keys(window.imageTaggingResults).length)) ? 'inline-block' : 'none';
     }
 }
 window.removeImage = function(idx) {
@@ -428,6 +417,10 @@ window.onload = renderImagePreviews;
                 const errorDiv = document.getElementById('ai-chat-error');
                 errorDiv.textContent = data.error;
                 errorDiv.classList.remove('d-none');
+                // Check if redirect is needed
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                }
             } else {
                 window.aiChatHistory = Array.isArray(data.history) ? data.history : [];
                 if (typeof renderAIChatHistory === 'function') renderAIChatHistory();
@@ -448,27 +441,33 @@ window.onload = renderImagePreviews;
     });
 })();
 
-// --- AI Assistant Functions ---
-window.startAISorting = function() {
+// --- AI Image Tagging Functions ---
+window.tagBatchImages = function() {
     // Get current batch product IDs
     const batch = window.getCurrentUploadBatch();
     const productIds = batch.map(f => f.id).filter(Boolean);
-    const formData = new FormData();
-    formData.append('message', 'auto categorize');
-    formData.append('history', JSON.stringify(aiChatHistory));
-    formData.append('product_ids', JSON.stringify(productIds));
-    // Disable send button
-    const sendBtn = document.getElementById('ai-chat-send-btn');
-    sendBtn.disabled = true;
-    sendBtn.textContent = 'Sending...';
+    
+    if (!productIds.length) {
+        alert('No images in current batch to tag.');
+        return;
+    }
+
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Tagging...';
+    
     // Hide previous error
     document.getElementById('ai-chat-error').classList.add('d-none');
-    fetch('/api/ai-chat', {
+
+    fetch('/api/image/tag-batch', {
         method: 'POST',
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify({ product_ids: productIds })
     })
     .then(res => res.json())
     .then(data => {
@@ -476,66 +475,91 @@ window.startAISorting = function() {
             const errorDiv = document.getElementById('ai-chat-error');
             errorDiv.textContent = data.error;
             errorDiv.classList.remove('d-none');
+            // Check if redirect is needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         } else {
-            // Store categorization result if present
-            let foundCategorization = false;
-            if (data.data && data.data.categorization) {
-                window.aiCategorizationResult = data.data.categorization;
-                foundCategorization = true;
-                alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
-            } else if (data.history && Array.isArray(data.history)) {
-                let lastAI = data.history.slice().reverse().find(h => h.ai && h.ai.trim().startsWith('{'));
-                if (lastAI) {
-                    try {
-                        let parsed = JSON.parse(lastAI.ai);
-                        if (Array.isArray(parsed) && parsed[0] && parsed[0].product_id) {
-                            window.aiCategorizationResult = parsed;
-                            foundCategorization = true;
-                        } else if (parsed && parsed.product_id) {
-                            window.aiCategorizationResult = [parsed];
-                            foundCategorization = true;
-                        } else if (parsed.results && Array.isArray(parsed.results)) {
-                            window.aiCategorizationResult = parsed.results;
-                            foundCategorization = true;
-                        } else if (parsed.results && parsed.results.product_id) {
-                            window.aiCategorizationResult = [parsed.results];
-                            foundCategorization = true;
-                        } else if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
-                            window.aiCategorizationResult = parsed.suggestions;
-                            foundCategorization = true;
-                        } else if (parsed.suggestions && parsed.suggestions.product_id) {
-                            window.aiCategorizationResult = [parsed.suggestions];
-                            foundCategorization = true;
-                        } else if (parsed.products && Array.isArray(parsed.products)) {
-                            window.aiCategorizationResult = parsed.products;
-                            foundCategorization = true;
-                        } else if (parsed.products && parsed.products.product_id) {
-                            window.aiCategorizationResult = [parsed.products];
-                            foundCategorization = true;
-                        }
-                        if (foundCategorization) {
-                            alert('AI categorization complete! You can now use the AI sorting and tagging tools.');
-                        }
-                    } catch (e) {}
-                }
-            }
-            if (!foundCategorization) {
-                window.aiCategorizationResult = [];
-            }
-            aiChatHistory = Array.isArray(data.history) ? data.history : [];
-            renderAIChatHistory();
-            document.getElementById('ai-chat-question').value = '';
+            // Store tagging results
+            window.imageTaggingResults = data.results;
+            alert('Image tagging complete! You can now view the tags for each image.');
+            // Refresh the image preview to show tags
+            renderImagePreviews(true);
         }
     })
     .catch((e) => {
-        console.log("error:", e)
+        console.log("error:", e);
         const errorDiv = document.getElementById('ai-chat-error');
-        errorDiv.textContent = 'Failed to contact AI.';
+        errorDiv.textContent = 'Failed to tag images.';
         errorDiv.classList.remove('d-none');
     })
     .finally(() => {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Send';
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+window.tagProductImages = function() {
+    // Get current batch
+    const batch = window.getCurrentUploadBatch();
+    if (!batch.length) {
+        alert('No images in current batch to tag.');
+        return;
+    }
+
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Tagging...';
+    
+    // Hide previous error
+    document.getElementById('ai-chat-error').classList.add('d-none');
+
+    // Tag each image individually
+    let completed = 0;
+    const results = {};
+
+    batch.forEach((file, index) => {
+        if (file.id) {
+            fetch('/api/image/tag', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    image_url: file.url,
+                    product_id: file.id 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                completed++;
+                if (data.success) {
+                    results[file.id] = data.tags;
+                }
+                
+                if (completed === batch.length) {
+                    // All tagging completed
+                    window.imageTaggingResults = results;
+                    alert('Image tagging complete! You can now view the tags for each image.');
+                    renderImagePreviews(true);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            })
+            .catch((e) => {
+                completed++;
+                console.log("error tagging image:", e);
+                if (completed === batch.length) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        } else {
+            completed++;
+        }
     });
 }
 
@@ -667,81 +691,88 @@ window.getCurrentUploadBatch = function() {
 
 // Update AI sorting/tagging functions to use current batch
 window.sortByStyle = function() {
-
-    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
+        return alert('No image tagging results. Please run Tag Images with AI first.');
+    }
+    
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Debugging: log aiCategorizationResult and batch
-    console.log('aiCategorizationResult:', window.aiCategorizationResult);
-    window.aiCategorizationResult.forEach((item, idx) => {
-        if (idx < 5) console.log('aiCategorizationResult item', idx, item);
+    
+    // Build a map: product_id -> primary tag
+    let tagMap = {};
+    Object.keys(window.imageTaggingResults).forEach(productId => {
+        let tags = window.imageTaggingResults[productId];
+        if (tags && tags.length > 0) {
+            // Use the highest confidence tag as primary
+            tagMap[productId] = tags[0].name;
+        }
     });
-    console.log('batch:', batch);
-    batch.forEach((img, idx) => {
-        if (idx < 5) console.log('batch img', idx, img);
-    });
-    // Build a map: product_id/name/id -> style
-    let styleMap = {};
-    window.aiCategorizationResult.forEach(item => {
-        if (item.product_id) styleMap[item.product_id] = item.style_tag || item.style || '';
-        if (item.name) styleMap[item.name] = item.style_tag || item.style || '';
-        if (item.id) styleMap[item.id] = item.style_tag || item.style || '';
-    });
-    // Debugging logs
-    console.log('--- DEBUG: sortByStyle ---');
-    console.log('styleMap:', styleMap);
-    batch.forEach((img, idx) => {
-        console.log(`img[${idx}]:`, img, 'style:', styleMap[img.id]);
-    });
-    // Sort batch by style (alphabetically, unknown last)
+    
+    // Sort batch by primary tag (alphabetically, untagged last)
     batch.sort((a, b) => {
-        let styleA = styleMap[a.id] || 'zzz';
-        let styleB = styleMap[b.id] || 'zzz';
-        return styleA.localeCompare(styleB);
+        let tagA = tagMap[a.id] || 'zzz';
+        let tagB = tagMap[b.id] || 'zzz';
+        return tagA.localeCompare(tagB);
     });
+    
     // Show sorting status
-    document.getElementById('sort-status-text').textContent = 'Images sorted by style';
+    document.getElementById('sort-status-text').textContent = 'Images sorted by primary tag';
     document.getElementById('sort-status').style.display = 'block';
-    console.log('batch after sort:', batch);
-    // Re-render without tags (just reorder images)
+    
+    // Re-render with tags
     renderImagePreviews(true);
 }
 window.sortByCategoryAndStyle = function() {
-    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
+        return alert('No image tagging results. Please run Tag Images with AI first.');
+    }
+    
     let batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Build a map: name/id -> {category, style}
-    let catMap = {};
-    window.aiCategorizationResult.forEach(item => {
-        if (item.name) catMap[item.name] = item;
-        if (item.id) catMap[item.id] = item;
-    });
-    // Sort batch by category, then style
+    
+    // Sort batch by tag type (fashion, color, general), then by tag name
     batch.sort((a, b) => {
-        let ca = catMap[a.name || a.id] || {};
-        let cb = catMap[b.name || b.id] || {};
-        let catA = ca.category || 'zzz';
-        let catB = cb.category || 'zzz';
-        if (catA !== catB) return catA.localeCompare(catB);
-        let styleA = ca.style_tag || ca.style || 'zzz';
-        let styleB = cb.style_tag || cb.style || 'zzz';
-        return styleA.localeCompare(styleB);
+        let tagsA = window.imageTaggingResults[a.id] || [];
+        let tagsB = window.imageTaggingResults[b.id] || [];
+        
+        let primaryTagA = tagsA.length > 0 ? tagsA[0] : null;
+        let primaryTagB = tagsB.length > 0 ? tagsB[0] : null;
+        
+        // Sort by tag type first
+        let typeOrder = { 'fashion': 1, 'color': 2, 'general': 3 };
+        let typeA = primaryTagA ? (primaryTagA.type || 'general') : 'general';
+        let typeB = primaryTagB ? (primaryTagB.type || 'general') : 'general';
+        
+        if (typeA !== typeB) {
+            return (typeOrder[typeA] || 3) - (typeOrder[typeB] || 3);
+        }
+        
+        // Then sort by tag name
+        let nameA = primaryTagA ? primaryTagA.name : 'zzz';
+        let nameB = primaryTagB ? primaryTagB.name : 'zzz';
+        return nameA.localeCompare(nameB);
     });
+    
     // Show sorting status
-    document.getElementById('sort-status-text').textContent = 'Images sorted by category and style';
+    document.getElementById('sort-status-text').textContent = 'Images sorted by tag type and name';
     document.getElementById('sort-status').style.display = 'block';
-    // Re-render without tags (just reorder images)
-    renderImagePreviews(false);
+    
+    // Re-render with tags
+    renderImagePreviews(true);
 }
 window.tagProductCategory = function() {
-    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
+        return alert('No image tagging results. Please run Tag Images with AI first.');
+    }
     const batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Show category and style tags for current batch
+    // Show tags for current batch
     renderImagePreviews(true);
 }
 window.organizeByStyle = function() {
-    if (!window.aiCategorizationResult.length) return alert('No AI categorization result. Please run Start AI Sorting first.');
+    if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
+        return alert('No image tagging results. Please run Tag Images with AI first.');
+    }
     const batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
     alert('Organize by style for current batch.');
@@ -800,6 +831,10 @@ document.getElementById('addMasterCategoryForm').addEventListener('submit', func
     .then(data => {
         if (data.error) {
             alert(data.message || data.error);
+            // Check if redirect is needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         } else {
             location.reload();
         }
@@ -820,6 +855,10 @@ document.getElementById('addSubCategoryForm').addEventListener('submit', functio
     .then(data => {
         if (data.error) {
             alert(data.message || data.error);
+            // Check if redirect is needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         } else {
             location.reload();
         }
@@ -859,6 +898,10 @@ document.getElementById('confirmDeleteCategoryBtn').onclick = function() {
         if (data.error) {
             document.getElementById('deleteCategoryError').textContent = data.error || data.message;
             document.getElementById('deleteCategoryError').style.display = 'block';
+            // Check if redirect is needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         } else {
             location.reload();
         }
@@ -949,6 +992,10 @@ window.updateCategoryOrder = function(order, parentId) {
             // Optionally show a success message
         } else {
             alert(data.error || 'Failed to update order');
+            // Check if redirect is needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         }
     });
 }
@@ -1139,26 +1186,28 @@ window.updateCategoryOrder = function(order, parentId) {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>Do you want to move the products in this category to another category/subcategory, or delete them?</p>
-        <div class="mb-3">
-          <label for="moveToCategory" class="form-label">Move products to:</label>
-          <select class="form-select" id="moveToCategory">
-            <option value="">-- Select Category --</option>
-            @foreach($masterCategories as $master)
-              <option value="{{ $master->id }}">{{ $master->name }}</option>
-              @foreach($master->subcategories as $sub)
-                <option value="{{ $sub->id }}">&nbsp;&nbsp;{{ $sub->name }}</option>
+        <form id="deleteCategoryForm" method="POST" action="#">
+          <p>Do you want to move the products in this category to another category/subcategory, or delete them?</p>
+          <div class="mb-3">
+            <label for="moveToCategory" class="form-label">Move products to:</label>
+            <select class="form-select" id="moveToCategory" name="moveToCategory">
+              <option value="">-- Select Category --</option>
+              @foreach($masterCategories as $master)
+                <option value="{{ $master->id }}">{{ $master->name }}</option>
+                @foreach($master->subcategories as $sub)
+                  <option value="{{ $sub->id }}">&nbsp;&nbsp;{{ $sub->name }}</option>
+                @endforeach
               @endforeach
-            @endforeach
-          </select>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" value="1" id="deleteProductsCheck">
-          <label class="form-check-label" for="deleteProductsCheck">
-            Delete all products in this category
-          </label>
-        </div>
-        <div id="deleteCategoryError" class="text-danger mt-2" style="display:none;"></div>
+            </select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="deleteProductsCheck" name="deleteProducts">
+            <label class="form-check-label" for="deleteProductsCheck">
+              Delete all products in this category
+            </label>
+          </div>
+          <div id="deleteCategoryError" class="text-danger mt-2" style="display:none;"></div>
+        </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1172,7 +1221,7 @@ window.updateCategoryOrder = function(order, parentId) {
 <div class="modal fade" id="addMasterCategoryModal" tabindex="-1" aria-labelledby="addMasterCategoryModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="addMasterCategoryForm">
+      <form id="addMasterCategoryForm" method="POST" action="#">
         <div class="modal-header">
           <h5 class="modal-title" id="addMasterCategoryModalLabel">Add Master Category</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1180,9 +1229,9 @@ window.updateCategoryOrder = function(order, parentId) {
         <div class="modal-body">
           <div class="mb-3">
             <label for="masterCategoryName" class="form-label">Category Name</label>
-            <input type="text" class="form-control" id="masterCategoryName" name="name" required>
+            <input type="text" class="form-control" id="masterCategoryName" name="name" autocomplete="off" required>
           </div>
-          <input type="hidden" name="parent_id" value="0">
+                                              <input type="hidden" id="masterCategoryParentId" name="parent_id" value="0">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1197,7 +1246,7 @@ window.updateCategoryOrder = function(order, parentId) {
 <div class="modal fade" id="addSubCategoryModal" tabindex="-1" aria-labelledby="addSubCategoryModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="addSubCategoryForm">
+      <form id="addSubCategoryForm" method="POST" action="#">
         <div class="modal-header">
           <h5 class="modal-title" id="addSubCategoryModalLabel">Add Subcategory</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1205,7 +1254,7 @@ window.updateCategoryOrder = function(order, parentId) {
         <div class="modal-body">
           <div class="mb-3">
             <label for="subCategoryName" class="form-label">Subcategory Name</label>
-            <input type="text" class="form-control" id="subCategoryName" name="name" required>
+            <input type="text" class="form-control" id="subCategoryName" name="name" autocomplete="off" required>
           </div>
           <input type="hidden" id="subCategoryParentId" name="parent_id" value="">
         </div>

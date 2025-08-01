@@ -2098,6 +2098,11 @@ class ProductController extends Controller
     }
     
     public function uploadProduct() {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return redirect('/onboard');
+        }
+        
         $masterCategories = \App\Models\Category::where('status', 1)->where('parent_id', 0)->orderBy('row_order')->get();
         foreach ($masterCategories as $master) {
             $decoded = json_decode($master->name, true);

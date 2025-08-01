@@ -31,6 +31,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'clarifai' => [
+        'api_key' => env('CLARIFAI_API_KEY'),
+        'base_url' => env('CLARIFAI_BASE_URL', 'https://api.clarifai.com/v2'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID') ?? '',
         'client_secret' => env('GOOGLE_CLIENT_SECRET') ?? '',

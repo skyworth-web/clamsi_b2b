@@ -403,58 +403,123 @@
             document.getElementById('remember-device-modal').style.display = 'flex';
         }
         function rememberDeviceYes() {
-            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
-            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
-            console.log('[RememberDevice] YES clicked. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
-            if (!countryCode || !mobileNumber) {
-                console.log('[RememberDevice] Missing countryCode or mobileNumber.');
-                redirectToMainPage();
-                return;
-            }
-            var hash = md5(countryCode + mobileNumber);
-            var cookieName = 'remember_device_' + hash;
+            console.log('[RememberDevice] YES clicked - setting remember device to true');
+            
+            // Set a client-side cookie immediately
             var d = new Date();
             d.setTime(d.getTime() + (30*24*60*60*1000));
             var expires = 'expires=' + d.toUTCString();
-            document.cookie = cookieName + '=1;' + expires + ';path=/';
-            console.log('[RememberDevice] Set cookie:', cookieName, 'expires:', expires);
-            // Call Livewire to set rememberDevice true
-            window.Livewire.find(window.Livewire.first().id).setRememberDevice(true);
-            setTimeout(redirectToMainPage, 200); // Give Livewire a moment
+            document.cookie = 'remember_device=1;' + expires + ';path=/';
+            console.log('[RememberDevice] Set client-side cookie: remember_device=1');
+            
+            // Livewire approach removed - using direct API instead
+            console.log('[RememberDevice] Skipping Livewire call - using direct API');
+            
+            // Also try a direct AJAX call to set the session
+            console.log('[RememberDevice] Attempting direct session update...');
+            try {
+                fetch('/remember-device/true', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('[RememberDevice] Direct API response status:', response.status);
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('[RememberDevice] Direct API response text:', text);
+                    try {
+                        var json = JSON.parse(text);
+                        console.log('[RememberDevice] Direct API parsed response:', json);
+                    } catch (e) {
+                        console.error('[RememberDevice] Direct API failed to parse as JSON:', e);
+                    }
+                })
+                .catch(error => {
+                    console.error('[RememberDevice] Direct API error:', error);
+                });
+                
+            } catch (error) {
+                console.error('[RememberDevice] Error with direct API request:', error);
+            }
+            
+            // Wait 30 seconds before redirecting to allow time for debugging
+            console.log('[RememberDevice] Waiting 30 seconds before redirect...');
+            setTimeout(function() {
+                console.log('[RememberDevice] 30 seconds elapsed, now redirecting...');
+                // Hide the modal
+                document.getElementById('remember-device-modal').style.display = 'none';
+                
+                // Redirect to the appropriate URL
+                var url = window._redirectUrl || '/';
+                console.log('[RememberDevice] Redirecting to:', url);
+                window.location.href = url;
+            }, 30000);
         }
         function rememberDeviceNo() {
-            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
-            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
-            console.log('[RememberDevice] NO clicked or modal closed. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
+            console.log('[RememberDevice] NO clicked - setting remember device to false');
+            
+            // Remove any existing remember device cookies
             document.cookie = 'remember_device=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             console.log('[RememberDevice] Deleted cookie: remember_device');
-            if (countryCode && mobileNumber) {
-                var hash = md5(countryCode + mobileNumber);
-                var cookieName = 'remember_device_' + hash;
-                document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                console.log('[RememberDevice] Deleted cookie:', cookieName);
+            
+            // Livewire approach removed - using direct API instead
+            console.log('[RememberDevice] Skipping Livewire call - using direct API');
+            
+            // Also try a direct AJAX call to set the session
+            console.log('[RememberDevice] Attempting direct session update...');
+            try {
+                fetch('/remember-device/false', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('[RememberDevice] Direct API response status:', response.status);
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('[RememberDevice] Direct API response text:', text);
+                    try {
+                        var json = JSON.parse(text);
+                        console.log('[RememberDevice] Direct API parsed response:', json);
+                    } catch (e) {
+                        console.error('[RememberDevice] Direct API failed to parse as JSON:', e);
+                    }
+                })
+                .catch(error => {
+                    console.error('[RememberDevice] Direct API error:', error);
+                });
+                
+            } catch (error) {
+                console.error('[RememberDevice] Error with direct API request:', error);
             }
-            // Call Livewire to set rememberDevice false
-            window.Livewire.find(window.Livewire.first().id).setRememberDevice(false);
-            setTimeout(redirectToMainPage, 200);
+            
+            // Wait 30 seconds before redirecting to allow time for debugging
+            console.log('[RememberDevice] Waiting 30 seconds before redirect...');
+            setTimeout(function() {
+                console.log('[RememberDevice] 30 seconds elapsed, now redirecting...');
+                // Hide the modal
+                document.getElementById('remember-device-modal').style.display = 'none';
+                
+                // Redirect to the appropriate URL
+                var url = window._redirectUrl || '/';
+                console.log('[RememberDevice] Redirecting to:', url);
+                window.location.href = url;
+            }, 30000);
         }
         function redirectToMainPage() {
-            // Remove all remember_device cookies for this device
-            var countryCode = document.querySelector('select[wire\\:model="form.country_code"]')?.value || '';
-            var mobileNumber = document.querySelector('input[wire\\:model="form.mobile_number"]')?.value || '';
-            console.log('[RememberDevice] NO clicked or modal closed. countryCode:', countryCode, 'mobileNumber:', mobileNumber);
-            // Remove old generic cookie
-            document.cookie = 'remember_device=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            console.log('[RememberDevice] Deleted cookie: remember_device');
-            // Remove hashed cookie if possible
-            if (countryCode && mobileNumber) {
-                var hash = md5(countryCode + mobileNumber);
-                var cookieName = 'remember_device_' + hash;
-                document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                console.log('[RememberDevice] Deleted cookie:', cookieName);
-            }
+            console.log('[RememberDevice] Redirecting to main page');
+            
+            // Hide the modal
             document.getElementById('remember-device-modal').style.display = 'none';
+            
+            // Redirect to the appropriate URL
             var url = window._redirectUrl || '/';
+            console.log('[RememberDevice] Redirecting to:', url);
             window.location.href = url;
         }
         // Simple JS implementation of md5 (for cookie name hash)
@@ -469,6 +534,16 @@
             }
             return Math.abs(hash).toString();
         }
+        
+        // Global error handler for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('[RememberDevice] Unhandled promise rejection:', event.reason);
+            console.error('[RememberDevice] Promise rejection stack:', event.reason?.stack);
+            // Prevent the default browser behavior
+            event.preventDefault();
+        });
+        
+
     </script>
     <script>
         $(document).ready(function() {
@@ -592,7 +667,11 @@
                         if (wireModel) {
                             console.log('Updating wire:model:', wireModel, 'with value:', value);
                             // Trigger Livewire to update the model
-                            Livewire.dispatch('updateFormField', { field: wireModel, value: value });
+                            try {
+                                Livewire.dispatch('updateFormField', { field: wireModel, value: value });
+                            } catch (error) {
+                                console.error('[Select2] Error dispatching updateFormField:', error);
+                            }
                         }
                     });
                 }
@@ -852,10 +931,14 @@
                 // Check if the input is a single digit (0-9)
                 if (/^[0-9]$/.test(value) && index < $('.otp-digit').length - 1) {
                     // Emit Livewire event to update the form
-                    Livewire.dispatch('updateFormField', {
-                        field: `form.otp_digits.${index}`,
-                        value: value
-                    });
+                    try {
+                        Livewire.dispatch('updateFormField', {
+                            field: `form.otp_digits.${index}`,
+                            value: value
+                        });
+                    } catch (error) {
+                        console.error('[OTP] Error dispatching updateFormField:', error);
+                    }
 
                     // Focus the next input
                     $('.otp-digit').eq(index + 1).focus();
@@ -884,10 +967,14 @@
                     $('.otp-digit').each(function(i) {
                         if (i < digits.length) {
                             $(this).val(digits[i]);
-                            Livewire.dispatch('updateFormField', {
-                                field: `form.otp_digits.${i}`,
-                                value: digits[i]
-                            });
+                            try {
+                                Livewire.dispatch('updateFormField', {
+                                    field: `form.otp_digits.${i}`,
+                                    value: digits[i]
+                                });
+                            } catch (error) {
+                                console.error('[OTP] Error dispatching updateFormField for paste:', error);
+                            }
                         }
                     });
                     // Focus the last filled input or the next empty one

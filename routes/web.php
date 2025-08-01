@@ -61,10 +61,44 @@ Route::get('/manifest', function () {
     return response()->json(config('manifest'));
 })->name('manifest');
 
-Route::get('/product/upload', [ProductController::class, 'uploadProduct']);
+Route::get('/product/upload', [ProductController::class, 'uploadProduct'])->middleware(['auth', 'role:seller']);
 // Route::get('/product/upload', function(){
 //     return response()->json(config('manifest'));
 // })->name('manifest');
+
+Route::get('/remember-device/{value}', function ($value) {
+    try {
+        $rememberDevice = ($value === 'true' || $value === '1');
+        
+        // Set the session
+        session(['remember_device' => $rememberDevice]);
+        session()->save();
+        
+        // Log for debugging
+        \Log::info('[RememberDevice Web] Setting remember_device to: ' . ($rememberDevice ? 'true' : 'false'), [
+            'user_id' => auth()->id(),
+            'session_id' => session()->getId(),
+            'remember_device' => session('remember_device')
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Remember device setting updated',
+            'remember_device' => $rememberDevice,
+            'session_id' => session()->getId(),
+            'user_id' => auth()->id()
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('[RememberDevice Web] Error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating remember device setting',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('remember-device.update');
 
 Route::middleware(['CheckInstallation'])->group(function () {
     // Route::get('/', function () {
@@ -185,10 +219,10 @@ Route::post("settings/system_registration", [SettingController::class, 'systemRe
 Route::post("settings/web_system_registration", [SettingController::class, 'WebsystemRegister'])->name('admin.web_system_register')->middleware(['demo_restriction']);
 
 // Add this route for deleting/moving category with products
-Route::post('/categories/delete-with-products', [\App\Http\Controllers\Admin\CategoryController::class, 'deleteWithProducts']);
+Route::post('/categories/delete-with-products', [\App\Http\Controllers\Admin\CategoryController::class, 'deleteWithProducts'])->middleware(['auth', 'role:seller']);
 
 // Add this route for reordering categories (for product upload UI drag-and-drop)
-Route::post('/categories/reorder', [\App\Http\Controllers\CategoryController::class, 'reorder'])->name('categories.reorder');
+Route::post('/categories/reorder', [\App\Http\Controllers\CategoryController::class, 'reorder'])->name('categories.reorder')->middleware(['auth', 'role:seller']);
 
 // Add this route for creating categories (for product upload UI)
-Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('categories.store');
+Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('categories.store')->middleware(['auth', 'role:seller']);

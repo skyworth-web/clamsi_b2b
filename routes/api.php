@@ -123,5 +123,13 @@ Route::group(['middleware' => ['check_token', 'auth:sanctum']], function () {
     // Route::get('/paypal_transaction_webview', [ApiController::class, 'paypal_transaction_webview'])->name('paypal_transaction_webview');
 });
 
-Route::post('/ai-chat', [AIChatController::class, 'chat']);
-Route::post('/ai-chat/clear', [AIChatController::class, 'clearHistory']);
+Route::post('/ai-chat', [AIChatController::class, 'chat'])->middleware(['auth', 'role:seller']);
+Route::post('/ai-chat/clear', [AIChatController::class, 'clearHistory'])->middleware(['auth', 'role:seller']);
+
+// Image tagging routes using Clarifai
+Route::post('/image/tag', [ImageTagController::class, 'tagImage'])->middleware(['auth', 'role:seller']);
+Route::post('/image/tag-batch', [ImageTagController::class, 'tagBatchImages'])->middleware(['auth', 'role:seller']);
+Route::get('/image/tags/{productId}', [ImageTagController::class, 'getProductTags'])->middleware(['auth', 'role:seller']);
+Route::put('/image/tags/{productId}', [ImageTagController::class, 'updateProductTags'])->middleware(['auth', 'role:seller']);
+
+

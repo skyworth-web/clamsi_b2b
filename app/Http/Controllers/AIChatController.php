@@ -18,6 +18,10 @@ class AIChatController extends Controller
     // Step 1: Start chat-based product upload
     public function chat(Request $request)
     {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
+        }
         $history = $request->input('history', []);
         if (is_string($history)) {
             $decoded = json_decode($history, true);
@@ -98,174 +102,8 @@ class AIChatController extends Controller
             $fileSummary[] = 'Excel file uploaded (processing not yet implemented)';
             // TODO: Implement Excel processing when Maatwebsite\Excel is properly installed
         }
-        // --- AI Auto-categorization logic ---
-        $autoCategorize = false;
-        if ($userMessage) {
-            $msg = strtolower($userMessage);
-            if (strpos($msg, 'auto categorize') !== false || strpos($msg, 'auto-categorize') !== false || strpos($msg, 'categorize products') !== false || strpos($msg, 'start ai sorting') !== false) {
-                $autoCategorize = true;
-            }
-        }
-        if ($autoCategorize) {
-            // Only fetch products in the batch if productIdsForCategorization is provided
-            if (!empty($productIdsForCategorization)) {
-                $products = Product::whereIn('id', $productIdsForCategorization)->get(['id', 'name', 'image', 'description']);
-            } else {
-                $products = Product::whereIn('status', [0, 1])->get(['id', 'name', 'image', 'description']);
-            }
-            // Fetch categories
-            $categories = Category::all(['id', 'name']);
-            // Prepare product and category data for prompt
-            $productList = [];
-            $imageMessages = [];
-            foreach ($products as $p) {
-                $name = $p->name;
-                if (is_string($name)) {
-                    $decoded = json_decode($name, true);
-                    $name = is_array($decoded) ? ($decoded['en'] ?? reset($decoded)) : $name;
-                }
-                $productList[] = [
-                    'id' => $p->id,
-                    'name' => $name,
-                    'description' => $p->description,
-                ];
-                // Prepare image as base64 data URI (resize to max 512px width)
-                if ($p->image && Storage::disk('public')->exists($p->image)) {
-                    $imagePath = Storage::disk('public')->path($p->image);
-                    try {
-                        $img = Image::make($imagePath);
-                        if ($img->width() > 512) {
-                            $img->resize(512, null, function ($constraint) { $constraint->aspectRatio(); });
-                        }
-                        $encoded = (string) $img->encode('jpg', 80);
-                        $base64 = base64_encode($encoded);
-                        $dataUri = 'data:image/jpeg;base64,' . $base64;
-                        $imageMessages[] = [
-                            ['type' => 'text', 'text' => "Product ID: {$p->id}, Name: {$name}"],
-                            ['type' => 'image_url', 'image_url' => ['url' => $dataUri]],
-                        ];
-                    } catch (\Exception $e) {
-                        // Log error and skip image
-                        Log::error('Image processing failed for product ' . $p->id . ': ' . $e->getMessage());
-                    }
-                }
-            }
-            $categoryList = [];
-            foreach ($categories as $c) {
-                $name = $c->name;
-                if (is_string($name)) {
-                    $decoded = json_decode($name, true);
-                    $name = is_array($decoded) ? ($decoded['en'] ?? reset($decoded)) : $name;
-                }
-                $categoryList[] = [
-                    'id' => $c->id,
-                    'name' => $name,
-                ];
-            }
-            // Build prompt for ChatGPT
-            $prompt = "You are an AI assistant for an e-commerce platform. Given a list of products and categories, assign each product to the most appropriate category and suggest a style tag.\n";
-            $prompt .= "Return a JSON array: [{product_id, suggested_category_id, style_tag, reason}].\n";
-            $prompt .= "Categories: " . json_encode($categoryList) . "\n";
-            $prompt .= "If you are unsure, pick the closest category.\n";
-            // Compose OpenAI messages array
-            $messages = [
-                ['role' => 'system', 'content' => $prompt],
-            ];
-            // Add each product's image and info as a separate user message
-            foreach ($imageMessages as $msgGroup) {
-                foreach ($msgGroup as $msg) {
-                    $messages[] = ['role' => 'user', 'content' => [$msg]];
-                }
-            }
-            // Call OpenAI API
-            $openaiApiKey = env('OPENAI_API_KEY');
-            $openaiResponse = \Http::withToken($openaiApiKey)
-                ->timeout(120)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model' => 'gpt-4o',
-                    'messages' => $messages,
-                    'max_tokens' => 600,
-                    'response_format' => ['type' => 'json_object'],
-                ]);
-            $aiMessage = '';
-            $nextStep = '';
-            if ($openaiResponse->successful()) {
-                $result = $openaiResponse->json();
-                $content = $result['choices'][0]['message']['content'] ?? '';
-                Log::info('OpenAI response content:', ['content' => $content]);
-                $json = json_decode($content, true);
-                Log::info('Parsed JSON:', ['json' => $json]);
-                // Handle direct array, { products: [...] }, and { results: [...] } structure
-                if (is_array($json) && isset($json[0]['product_id'])) {
-                    $categorizationResult = $json;
-                } else if (is_array($json) && isset($json['products']) && is_array($json['products'])) {
-                    $categorizationResult = $json['products'];
-                } else if (is_array($json) && isset($json['results']) && is_array($json['results'])) {
-                    $categorizationResult = $json['results'];
-                } else if (is_array($json) && isset($json['product_id'])) {
-                    $categorizationResult = [$json];
-                }
-                if ($categorizationResult) {
-                    // Always process as array
-                    if (isset($categorizationResult['product_id'])) {
-                        $categorizationResult = [$categorizationResult];
-                    }
-                    // Update product category_id in DB
-                    foreach ($categorizationResult as $item) {
-                        if (isset($item['product_id']) && isset($item['suggested_category_id'])) {
-                            Product::where('id', $item['product_id'])->update([
-                                'category_id' => $item['suggested_category_id']
-                            ]);
-                        }
-                    }
-                    // Add category_name to each result
-                    $categoryMap = Category::pluck('name', 'id')->toArray();
-                    foreach ($categorizationResult as &$item) {
-                        if (isset($item['suggested_category_id'])) {
-                            $catId = $item['suggested_category_id'];
-                            $catName = isset($categoryMap[$catId]) ? $categoryMap[$catId] : $catId;
-                            // Decode JSON name if needed
-                            if (is_string($catName)) {
-                                $decoded = json_decode($catName, true);
-                                if (is_array($decoded)) {
-                                    $catName = $decoded['en'] ?? reset($decoded);
-                                }
-                            }
-                            $item['category_name'] = $catName;
-                        }
-                    }
-                    unset($item); // break reference
-                    $aiMessage = 'Here are the AI-categorized products. You can now sort or tag them as you wish.';
-                    $nextStep = 'show_categorization';
-                } else {
-                    $aiMessage = $content;
-                    $nextStep = '';
-                }
-            } else {
-                $aiMessage = 'Sorry, there was an error contacting the AI assistant.';
-                $nextStep = '';
-            }
-            // Append to history
-            if ($userMessage) {
-                $history[] = ['user' => $userMessage];
-            }
-            if ($aiMessage) {
-                $history[] = ['ai' => $aiMessage];
-            }
-            $data = [];
-            if ($categorizationResult) {
-                Log::info('Final categorization result:', ['categorization' => $categorizationResult]);
-                $data['categorization'] = $categorizationResult;
-            }
-            if ($nextStep) {
-                $data['next_step'] = $nextStep;
-            }
-            return response()->json([
-                'response' => $aiMessage,
-                'data' => $data,
-                'history' => $history,
-            ]);
-        }
+        // Note: Image categorization is now handled by Clarifai service via separate endpoints
+        // This controller is only for chat functionality
         // Build chat history string
         $historyStr = "";
         foreach ($history as $entry) {
@@ -346,6 +184,11 @@ class AIChatController extends Controller
 
     public function clearHistory(Request $request)
     {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
+        }
+        
         // No file to clear, just return success
         return response()->json(['success' => true]);
     }

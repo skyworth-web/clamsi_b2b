@@ -190,6 +190,10 @@ class UserController extends Controller
     }
     public function logout()
     {
+        // Clear remember device session
+        session()->forget('remember_device');
+        session()->save();
+        
         Auth::logout();
         return response()->json([
             'error' => false,
@@ -199,6 +203,10 @@ class UserController extends Controller
 
     public function web_logout()
     {
+        // Clear remember device session
+        session()->forget('remember_device');
+        session()->save();
+        
         Auth::logout();
         return redirect('/onboard')->withHeaders([
             'Cache-Control' => 'no-cache, no-store, must-revalidate',

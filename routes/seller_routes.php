@@ -175,6 +175,9 @@ Route::group(
 
         Route::post("seller/product/bulk_upload", [ProductController::class, 'process_bulk_upload'])->name('seller.product.bulk_upload')->middleware(['demo_restriction']);
 
+        // Product Upload Setup
+        Route::get('seller/product/upload', [ProductController::class, 'uploadProduct'])->name('seller.product.upload');
+
         Route::get('seller/product/view_product/{id}', [ProductController::class, 'show'])->name('seller.product.show');
 
 

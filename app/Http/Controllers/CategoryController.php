@@ -119,6 +119,10 @@ class CategoryController extends Controller
      */
     public function reorder(Request $request)
     {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return response()->json(['success' => false, 'error' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
+        }
         $order = $request->input('order', []);
         $parentId = $request->input('parent_id', 0);
         if (!is_array($order) || count($order) === 0) {
@@ -140,6 +144,10 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return response()->json(['success' => false, 'error' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'parent_id' => 'nullable|integer',

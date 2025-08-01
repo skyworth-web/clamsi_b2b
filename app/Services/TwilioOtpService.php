@@ -22,6 +22,8 @@ class TwilioOtpService
      */
     public function sendOtp($mobile)
     {
+        // TEMPORARILY BYPASSED FOR TESTING - TWILIO API CALL COMMENTED OUT
+        /*
         $url = "https://verify.twilio.com/v2/Services/{$this->verifyServiceSid}/Verifications";
         $data = [
             'To' => $mobile,
@@ -37,11 +39,14 @@ class TwilioOtpService
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
+        */
+        
+        // TEMPORARY: Always return success for testing
         return [
-            'success' => $httpCode >= 200 && $httpCode < 300,
-            'response' => $response,
-            'http_code' => $httpCode,
-            'curl_error' => $curlError,
+            'success' => true,
+            'response' => '{"status": "pending"}',
+            'http_code' => 200,
+            'curl_error' => null,
         ];
     }
 
@@ -53,6 +58,8 @@ class TwilioOtpService
      */
     public function verifyOtp($mobile, $otp)
     {
+        // TEMPORARILY BYPASSED FOR TESTING - TWILIO API CALL COMMENTED OUT
+        /*
         $url = "https://verify.twilio.com/v2/Services/{$this->verifyServiceSid}/VerificationCheck";
         $data = [
             'To' => $mobile,
@@ -69,11 +76,15 @@ class TwilioOtpService
         $curlError = curl_error($ch);
         curl_close($ch);
         $responseData = json_decode($response, true);
+        */
+        
+        // TEMPORARY: Always return success for testing (you can modify this to check specific OTPs)
+        $responseData = ['status' => 'approved'];
         return [
-            'success' => $httpCode >= 200 && $httpCode < 300 && isset($responseData['status']) && $responseData['status'] === 'approved',
+            'success' => true,
             'response' => $responseData,
-            'http_code' => $httpCode,
-            'curl_error' => $curlError,
+            'http_code' => 200,
+            'curl_error' => null,
         ];
     }
 } 

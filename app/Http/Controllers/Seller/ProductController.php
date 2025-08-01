@@ -1214,6 +1214,28 @@ class ProductController extends Controller
         return response()->json([$response]);
     }
 
+    public function uploadProduct()
+    {
+        // Check if user is authenticated and has seller role (role_id = 4)
+        if (!auth()->check() || auth()->user()->role_id != 4) {
+            return redirect('/onboard');
+        }
+        
+        $masterCategories = \App\Models\Category::where('status', 1)->where('parent_id', 0)->orderBy('row_order')->get();
+        foreach ($masterCategories as $master) {
+            $decoded = json_decode($master->name, true);
+            $master->name = $decoded['en'] ?? $master->name;
+            $subcategories = \App\Models\Category::where('status', 1)->where('parent_id', $master->id)->orderBy('name')->get();
+            foreach ($subcategories as $sub) {
+                $subDecoded = json_decode($sub->name, true);
+                $sub->name = $subDecoded['en'] ?? $sub->name;
+            }
+            // Always set subcategories, even if empty
+            $master->subcategories = $subcategories;
+        }
+        return view('product.productUpload', ['masterCategories' => $masterCategories]);
+    }
+
     public function bulk_upload()
     {
         return view('seller.pages.forms.product_bulk_upload');
