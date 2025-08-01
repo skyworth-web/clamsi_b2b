@@ -445,18 +445,13 @@
                 console.error('[RememberDevice] Error with direct API request:', error);
             }
             
-            // Wait 30 seconds before redirecting to allow time for debugging
-            console.log('[RememberDevice] Waiting 30 seconds before redirect...');
-            setTimeout(function() {
-                console.log('[RememberDevice] 30 seconds elapsed, now redirecting...');
-                // Hide the modal
-                document.getElementById('remember-device-modal').style.display = 'none';
-                
-                // Redirect to the appropriate URL
-                var url = window._redirectUrl || '/';
-                console.log('[RememberDevice] Redirecting to:', url);
-                window.location.href = url;
-            }, 30000);
+            // Hide the modal and redirect immediately
+            document.getElementById('remember-device-modal').style.display = 'none';
+            
+            // Redirect to the appropriate URL
+            var url = window._redirectUrl || '/';
+            console.log('[RememberDevice] Redirecting to:', url);
+            window.location.href = url;
         }
         function rememberDeviceNo() {
             console.log('[RememberDevice] NO clicked - setting remember device to false');
@@ -498,18 +493,13 @@
                 console.error('[RememberDevice] Error with direct API request:', error);
             }
             
-            // Wait 30 seconds before redirecting to allow time for debugging
-            console.log('[RememberDevice] Waiting 30 seconds before redirect...');
-            setTimeout(function() {
-                console.log('[RememberDevice] 30 seconds elapsed, now redirecting...');
-                // Hide the modal
-                document.getElementById('remember-device-modal').style.display = 'none';
-                
-                // Redirect to the appropriate URL
-                var url = window._redirectUrl || '/';
-                console.log('[RememberDevice] Redirecting to:', url);
-                window.location.href = url;
-            }, 30000);
+            // Hide the modal and redirect immediately
+            document.getElementById('remember-device-modal').style.display = 'none';
+            
+            // Redirect to the appropriate URL
+            var url = window._redirectUrl || '/';
+            console.log('[RememberDevice] Redirecting to:', url);
+            window.location.href = url;
         }
         function redirectToMainPage() {
             console.log('[RememberDevice] Redirecting to main page');
