@@ -28,7 +28,7 @@ class RoleMiddleware
             } else if ($request->routeIs('seller.*')) {
                 return redirect('seller/login'); // Redirect to the seller login route
             } else {
-                return redirect('admin/login');
+                return redirect('/onboard'); // Redirect to onboard for all other cases
             }
         }
         $user = User::with('role')->find(Auth::user()->id);

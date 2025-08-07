@@ -33,6 +33,8 @@ return [
 
     'clarifai' => [
         'api_key' => env('CLARIFAI_API_KEY'),
+        'user_id' => env('CLARIFAI_USER_ID', 'clarifai'),
+        'app_id' => env('CLARIFAI_APP_ID', 'main'),
         'base_url' => env('CLARIFAI_BASE_URL', 'https://api.clarifai.com/v2'),
     ],
 
@@ -54,5 +56,8 @@ return [
         'sid' => env('TWILIO_SID'),
         'token' => env('TWILIO_TOKEN'),
         'verify_sid' => env('TWILIO_VERIFY_SID'),
+    ],
+    'google_vision' => [
+        'api_key' => env('GOOGLE_VISION_API_KEY'),
     ],
 ];

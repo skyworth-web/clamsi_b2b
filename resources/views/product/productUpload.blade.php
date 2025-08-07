@@ -332,6 +332,16 @@ window.submitImages = function() {
     const sendBtn = document.getElementById('upload-images-btn');
     sendBtn.disabled = true;
     sendBtn.textContent = 'Uploading...';
+    
+    // Hide previous error
+    document.getElementById('ai-chat-error').classList.add('d-none');
+    
+    console.log('Submitting images:', window.selectedImages.length, 'files');
+    console.log('FormData entries:');
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+    }
+    
     fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
@@ -339,12 +349,23 @@ window.submitImages = function() {
         },
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        console.log('Response status:', res.status);
+        console.log('Response headers:', res.headers);
+        return res.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.error) {
             const errorDiv = document.getElementById('ai-chat-error');
-            errorDiv.textContent = data.error;
+            errorDiv.textContent = data.error || data.message || 'Upload failed';
             errorDiv.classList.remove('d-none');
+            
+            // Check if redirect is needed
+            if (data.redirect) {
+                console.log('Redirecting to:', data.redirect);
+                window.location.href = data.redirect;
+            }
         } else {
             aiChatHistory = Array.isArray(data.history) ? data.history : [];
             renderAIChatHistory();
@@ -367,8 +388,9 @@ window.submitImages = function() {
         }
     })
     .catch((e) => {
+        console.error('Upload error:', e);
         const errorDiv = document.getElementById('ai-chat-error');
-        errorDiv.textContent = 'Failed to upload images.';
+        errorDiv.textContent = 'Failed to upload images: ' + e.message;
         errorDiv.classList.remove('d-none');
     })
     .finally(() => {
@@ -404,6 +426,12 @@ window.onload = renderImagePreviews;
         formData.append('message', '[excel upload]');
         uploadExcelBtn.disabled = true;
         uploadExcelBtn.textContent = 'Uploading...';
+        
+        // Hide previous error
+        document.getElementById('ai-chat-error').classList.add('d-none');
+        
+        console.log('Submitting Excel file:', selectedExcelFile.name);
+        
         fetch('/api/ai-chat', {
             method: 'POST',
             headers: {
@@ -411,14 +439,19 @@ window.onload = renderImagePreviews;
             },
             body: formData
         })
-        .then(res => res.json())
+        .then(res => {
+            console.log('Excel upload response status:', res.status);
+            return res.json();
+        })
         .then(data => {
+            console.log('Excel upload response data:', data);
             if (data.error) {
                 const errorDiv = document.getElementById('ai-chat-error');
-                errorDiv.textContent = data.error;
+                errorDiv.textContent = data.error || data.message || 'Excel upload failed';
                 errorDiv.classList.remove('d-none');
                 // Check if redirect is needed
                 if (data.redirect) {
+                    console.log('Redirecting to:', data.redirect);
                     window.location.href = data.redirect;
                 }
             } else {
@@ -430,8 +463,9 @@ window.onload = renderImagePreviews;
             }
         })
         .catch((e) => {
+            console.error('Excel upload error:', e);
             const errorDiv = document.getElementById('ai-chat-error');
-            errorDiv.textContent = 'Failed to upload Excel file.';
+            errorDiv.textContent = 'Failed to upload Excel file: ' + e.message;
             errorDiv.classList.remove('d-none');
         })
         .finally(() => {
@@ -461,6 +495,8 @@ window.tagBatchImages = function() {
     // Hide previous error
     document.getElementById('ai-chat-error').classList.add('d-none');
 
+    console.log('Tagging batch images:', productIds);
+
     fetch('/api/image/tag-batch', {
         method: 'POST',
         headers: {
@@ -469,28 +505,38 @@ window.tagBatchImages = function() {
         },
         body: JSON.stringify({ product_ids: productIds })
     })
-    .then(res => res.json())
+    .then(res => {
+        console.log('Tag batch response status:', res.status);
+        return res.json();
+    })
     .then(data => {
+        console.log('Tag batch response data:', data);
         if (data.error) {
             const errorDiv = document.getElementById('ai-chat-error');
-            errorDiv.textContent = data.error;
+            errorDiv.textContent = data.error || data.message || 'Image tagging failed';
             errorDiv.classList.remove('d-none');
             // Check if redirect is needed
             if (data.redirect) {
+                console.log('Redirecting to:', data.redirect);
                 window.location.href = data.redirect;
             }
         } else {
             // Store tagging results
-            window.imageTaggingResults = data.results;
-            alert('Image tagging complete! You can now view the tags for each image.');
+            window.imageTaggingResults = data.results || {};
+            const successCount = Object.keys(window.imageTaggingResults).length;
+            if (successCount > 0) {
+                alert(`Image tagging complete! Successfully tagged ${successCount} images. You can now view the tags for each image.`);
             // Refresh the image preview to show tags
             renderImagePreviews(true);
+            } else {
+                alert('Image tagging completed but no tags were generated. This might be due to API limitations or image content.');
+            }
         }
     })
     .catch((e) => {
-        console.log("error:", e);
+        console.error('Tag batch error:', e);
         const errorDiv = document.getElementById('ai-chat-error');
-        errorDiv.textContent = 'Failed to tag images.';
+        errorDiv.textContent = 'Failed to tag images: ' + e.message;
         errorDiv.classList.remove('d-none');
     })
     .finally(() => {
@@ -516,6 +562,8 @@ window.tagProductImages = function() {
     // Hide previous error
     document.getElementById('ai-chat-error').classList.add('d-none');
 
+    console.log('Tagging individual images:', batch.length);
+
     // Tag each image individually
     let completed = 0;
     const results = {};
@@ -533,8 +581,12 @@ window.tagProductImages = function() {
                     product_id: file.id 
                 })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log(`Image ${file.id} tag response status:`, res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log(`Image ${file.id} tag response data:`, data);
                 completed++;
                 if (data.success) {
                     results[file.id] = data.tags;
@@ -543,7 +595,12 @@ window.tagProductImages = function() {
                 if (completed === batch.length) {
                     // All tagging completed
                     window.imageTaggingResults = results;
-                    alert('Image tagging complete! You can now view the tags for each image.');
+                    const successCount = Object.keys(results).length;
+                    if (successCount > 0) {
+                        alert(`Image tagging complete! Successfully tagged ${successCount} images. You can now view the tags for each image.`);
+                    } else {
+                        alert('Image tagging completed but no tags were generated. This might be due to API limitations or image content.');
+                    }
                     renderImagePreviews(true);
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -551,7 +608,7 @@ window.tagProductImages = function() {
             })
             .catch((e) => {
                 completed++;
-                console.log("error tagging image:", e);
+                console.error(`Error tagging image ${file.id}:`, e);
                 if (completed === batch.length) {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -605,6 +662,9 @@ window.sendAIChat = function() {
     sendBtn.textContent = 'Sending...';
     // Hide previous error
     document.getElementById('ai-chat-error').classList.add('d-none');
+    
+    console.log('Sending AI chat message:', question);
+    
     fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
@@ -612,12 +672,22 @@ window.sendAIChat = function() {
         },
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        console.log('AI chat response status:', res.status);
+        return res.json();
+    })
     .then(data => {
+        console.log('AI chat response data:', data);
         if (data.error) {
             const errorDiv = document.getElementById('ai-chat-error');
-            errorDiv.textContent = data.error;
+            errorDiv.textContent = data.error || data.message || 'AI chat failed';
             errorDiv.classList.remove('d-none');
+            
+            // Check if redirect is needed
+            if (data.redirect) {
+                console.log('Redirecting to:', data.redirect);
+                window.location.href = data.redirect;
+            }
         } else {
             // Store categorization result if present
             let foundCategorization = false;
@@ -670,9 +740,9 @@ window.sendAIChat = function() {
         }
     })
     .catch((e) => {
-        console.log("error:", e)
+        console.error('AI chat error:', e);
         const errorDiv = document.getElementById('ai-chat-error');
-        errorDiv.textContent = 'Failed to contact AI.';
+        errorDiv.textContent = 'Failed to contact AI: ' + e.message;
         errorDiv.classList.remove('d-none');
     })
     .finally(() => {

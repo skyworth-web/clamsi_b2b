@@ -61,7 +61,7 @@ Route::get('/manifest', function () {
     return response()->json(config('manifest'));
 })->name('manifest');
 
-Route::get('/product/upload', [ProductController::class, 'uploadProduct'])->middleware(['auth', 'role:seller']);
+Route::get('/product/upload', [\App\Http\Controllers\Admin\ProductController::class, 'uploadProduct'])->middleware(['auth', 'role:seller']);
 // Route::get('/product/upload', function(){
 //     return response()->json(config('manifest'));
 // })->name('manifest');
@@ -226,3 +226,13 @@ Route::post('/categories/reorder', [\App\Http\Controllers\CategoryController::cl
 
 // Add this route for creating categories (for product upload UI)
 Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('categories.store')->middleware(['auth', 'role:seller']);
+
+// AI Chat routes for product upload
+Route::post('/api/ai-chat', [\App\Http\Controllers\AIChatController::class, 'chat'])->middleware(['auth', 'role:seller']);
+Route::post('/api/ai-chat/clear', [\App\Http\Controllers\AIChatController::class, 'clearHistory'])->middleware(['auth', 'role:seller']);
+
+// Image tagging routes using Clarifai
+Route::post('/api/image/tag', [\App\Http\Controllers\ImageTagController::class, 'tagImage'])->middleware(['auth', 'role:seller']);
+Route::post('/api/image/tag-batch', [\App\Http\Controllers\ImageTagController::class, 'tagBatchImages'])->middleware(['auth', 'role:seller']);
+Route::get('/api/image/tags/{productId}', [\App\Http\Controllers\ImageTagController::class, 'getProductTags'])->middleware(['auth', 'role:seller']);
+Route::put('/api/image/tags/{productId}', [\App\Http\Controllers\ImageTagController::class, 'updateProductTags'])->middleware(['auth', 'role:seller']);

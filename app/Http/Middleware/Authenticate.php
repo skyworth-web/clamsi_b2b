@@ -14,11 +14,11 @@ class Authenticate extends Middleware
     {
         
         if ($request->expectsJson()) {
-            return route('admin.login'); // Don't redirect for JSON requests
+            return '/onboard'; // Don't redirect for JSON requests
         }
     
         if ($request->routeIs('admin.*') || !auth()->check()) {
-            return route('admin.login'); // Redirect to the admin login route
+            return '/onboard'; // Redirect to onboard instead of admin login
         }
     
     }

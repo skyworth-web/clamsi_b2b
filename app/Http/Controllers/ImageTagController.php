@@ -3,26 +3,35 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\ClarifaiService;
+use App\Services\GoogleVisionService;
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 
 class ImageTagController extends Controller
 {
-    protected $clarifaiService;
+    protected $visionService;
 
-    public function __construct(ClarifaiService $clarifaiService)
+    public function __construct(GoogleVisionService $visionService)
     {
-        $this->clarifaiService = $clarifaiService;
+        $this->visionService = $visionService;
     }
 
     /**
-     * Tag a single image using Clarifai
+     * Tag a single image using Google Vision
      */
     public function tagImage(Request $request)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('ImageTag: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('ImageTag: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('ImageTag: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
 
@@ -35,8 +44,8 @@ class ImageTagController extends Controller
             $imageUrl = $request->input('image_url');
             $productId = $request->input('product_id');
 
-            // Get tags from Clarifai
-            $tags = $this->clarifaiService->getProductTags($imageUrl);
+            // Get tags from Google Vision
+            $tags = $this->visionService->getProductTags($imageUrl);
 
             if (!$tags) {
                 return response()->json([
@@ -76,7 +85,16 @@ class ImageTagController extends Controller
     public function tagBatchImages(Request $request)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('ImageTag batch: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('ImageTag batch: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('ImageTag batch: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
 
@@ -102,8 +120,8 @@ class ImageTagController extends Controller
                 // Get the full image URL
                 $imageUrl = asset('storage/' . $product->image);
                 
-                // Get tags from Clarifai
-                $tags = $this->clarifaiService->getProductTags($imageUrl);
+                // Get tags from Google Vision
+                $tags = $this->visionService->getProductTags($imageUrl);
 
                 if ($tags) {
                     // Update product with tags
@@ -144,7 +162,16 @@ class ImageTagController extends Controller
     public function getProductTags(Request $request, $productId)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('ImageTag getProductTags: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('ImageTag getProductTags: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('ImageTag getProductTags: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
 
@@ -183,7 +210,16 @@ class ImageTagController extends Controller
     public function updateProductTags(Request $request, $productId)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('ImageTag updateProductTags: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('ImageTag updateProductTags: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('ImageTag updateProductTags: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
 

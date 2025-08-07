@@ -9,6 +9,10 @@ class RememberDeviceSession
 {
     public function handle(Request $request, Closure $next)
     {
+        // Force session to start
+        if (!session()->isStarted()) {
+            session()->start();
+        }
         // Check if user is authenticated and has remember device enabled
         if (auth()->check() && session('remember_device', false)) {
             // Set session lifetime to 30 days for remember device

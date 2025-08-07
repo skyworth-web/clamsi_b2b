@@ -8,6 +8,11 @@ class CustomSessionCookie
 {
     public function handle($request, Closure $next)
     {
+        // Force session to start
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
         $response = $next($request);
 
         // Check if session is available and user is authenticated

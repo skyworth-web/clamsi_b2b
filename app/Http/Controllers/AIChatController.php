@@ -19,9 +19,19 @@ class AIChatController extends Controller
     public function chat(Request $request)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('AIChat: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('AIChat: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('AIChat: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
+        
         $history = $request->input('history', []);
         if (is_string($history)) {
             $decoded = json_decode($history, true);
@@ -41,6 +51,7 @@ class AIChatController extends Controller
         }
         // Handle image upload
         if ($request->hasFile('images')) {
+            Log::info('AIChat: Processing image upload', ['file_count' => count($request->file('images'))]);
             // Log the current DB connection name
             try {
                 $connectionName = DB::getDefaultConnection();
@@ -57,6 +68,7 @@ class AIChatController extends Controller
             }
             $images = $request->file('images');
             foreach ($images as $image) {
+                try {
                 // Ensure unique product name
                 $maxAttempts = 5;
                 $attempt = 0;
@@ -71,6 +83,8 @@ class AIChatController extends Controller
                 }
                 // Save image to public disk for web access
                 $imagePath = $image->store('uploads/products', 'public');
+                    Log::info('Image stored successfully', ['path' => $imagePath]);
+                    
                 $product = Product::create([
                     'name' => json_encode($uniqueName),
                     'image' => $imagePath,
@@ -85,6 +99,7 @@ class AIChatController extends Controller
                     'is_cancelable' => 1,
                     'cod_allowed' => 1,
                 ]);
+                    Log::info('Product created successfully', ['product_id' => $product->id]);
                 $productIds[] = $product->id;
                 // Add uploaded image info for frontend
                 $uploadedImages[] = [
@@ -92,8 +107,13 @@ class AIChatController extends Controller
                     'name' => $uniqueName,
                     'url' => asset('storage/' . $imagePath),
                 ];
+                } catch (\Exception $e) {
+                    Log::error('Error processing image upload: ' . $e->getMessage(), ['file' => $image->getClientOriginalName()]);
+                    continue;
+                }
             }
             $fileSummary[] = count($images) . ' product images uploaded';
+            Log::info('Image upload completed', ['uploaded_count' => count($uploadedImages), 'total_files' => count($images)]);
         }
         // Handle excel upload
         if ($request->hasFile('excel')) {
@@ -185,7 +205,16 @@ class AIChatController extends Controller
     public function clearHistory(Request $request)
     {
         // Check if user is authenticated and has seller role (role_id = 4)
-        if (!auth()->check() || auth()->user()->role_id != 4) {
+        if (!auth()->check()) {
+            Log::error('AIChat clearHistory: User not authenticated');
+            return response()->json(['error' => true, 'message' => 'User not authenticated.', 'redirect' => '/login'], 401);
+        }
+        
+        $user = auth()->user();
+        Log::info('AIChat clearHistory: User authenticated', ['user_id' => $user->id, 'role_id' => $user->role_id]);
+        
+        if ($user->role_id != 4) {
+            Log::error('AIChat clearHistory: User does not have seller role', ['user_id' => $user->id, 'role_id' => $user->role_id]);
             return response()->json(['error' => true, 'message' => 'Access denied. Only sellers can access this feature.', 'redirect' => '/onboard'], 403);
         }
         
