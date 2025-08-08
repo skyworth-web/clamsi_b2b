@@ -4,16 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\GoogleVisionService;
+use App\Services\OpenAIService;
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 
 class ImageTagController extends Controller
 {
     protected $visionService;
+    protected $openaiService;
 
-    public function __construct(GoogleVisionService $visionService)
+    public function __construct(GoogleVisionService $visionService, OpenAIService $openaiService)
     {
         $this->visionService = $visionService;
+        $this->openaiService = $openaiService;
     }
 
     /**
@@ -47,6 +50,9 @@ class ImageTagController extends Controller
             // Get tags from Google Vision
             $tags = $this->visionService->getProductTags($imageUrl);
 
+            // Get tags from OpenAI
+            $openaiTags = $this->openaiService->getImageTags($imageUrl);
+
             if (!$tags) {
                 return response()->json([
                     'error' => true,
@@ -59,14 +65,20 @@ class ImageTagController extends Controller
                 $product = Product::find($productId);
                 if ($product) {
                     // Convert tags array to JSON string for storage
-                    $tagsJson = json_encode($tags);
+                    $tagsJson = json_encode([
+                        'google_vision' => $tags,
+                        'openai' => $openaiTags,
+                    ]);
                     $product->update(['tags' => $tagsJson]);
                 }
             }
 
             return response()->json([
                 'success' => true,
-                'tags' => $tags,
+                'tags' => [
+                    'google_vision' => $tags,
+                    'openai' => $openaiTags,
+                ],
                 'message' => 'Image tagged successfully'
             ]);
 
@@ -119,18 +131,25 @@ class ImageTagController extends Controller
 
                 // Get the full image URL
                 $imageUrl = asset('storage/' . $product->image);
-                
                 // Get tags from Google Vision
                 $tags = $this->visionService->getProductTags($imageUrl);
+                // Get tags from OpenAI
+                $openaiTags = $this->openaiService->getImageTags($imageUrl);
 
-                if ($tags) {
-                    // Update product with tags
-                    $tagsJson = json_encode($tags);
+                if ($tags || $openaiTags) {
+                    // Update product with tags (store both as JSON)
+                    $tagsJson = json_encode([
+                        'google_vision' => $tags,
+                        'openai' => $openaiTags,
+                    ]);
                     $product->update(['tags' => $tagsJson]);
 
                     $results[$productId] = [
                         'success' => true,
-                        'tags' => $tags,
+                        'tags' => [
+                            'google_vision' => $tags,
+                            'openai' => $openaiTags,
+                        ],
                         'message' => 'Image tagged successfully'
                     ];
                 } else {

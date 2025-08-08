@@ -224,7 +224,7 @@ function handleImageSelection(e) {
     renderImagePreviews();
     e.target.value = '';
 }
-function renderImagePreviews(showTags = false) {
+function renderImagePreviews() {
     const grid = document.getElementById('image-preview-grid');
     grid.innerHTML = '';
     // Show all images from all batches
@@ -235,20 +235,13 @@ function renderImagePreviews(showTags = false) {
     // Add currently selected images (not yet uploaded)
     allFiles = allFiles.concat(window.selectedImages);
 
-    // If tagging is enabled, only show current batch with tags
+    // If tagging is enabled, only show current batch
     let filesToShow = allFiles;
-    let showTagging = false;
-    let taggingMap = {};
     
     // Check if we have image tagging results
     if (window.imageTaggingResults && Object.keys(window.imageTaggingResults).length) {
         // Only show current batch when image tagging is available
         filesToShow = window.getCurrentUploadBatch();
-        
-        if (showTags) {
-            showTagging = true;
-            taggingMap = window.imageTaggingResults;
-        }
     }
 
 
@@ -264,40 +257,20 @@ function renderImagePreviews(showTags = false) {
         box.style.alignItems = 'center';
         box.style.justifyContent = 'center';
         box.style.background = '#fafafa';
-        let badgeHtml = '';
-        if (showTagging) {
-            // Get tags for this product
-            let productTags = taggingMap[file.id];
-            if (productTags && productTags.length > 0) {
-                // Show top 3 tags by confidence
-                let topTags = productTags.slice(0, 3);
-                let badges = [];
-                
-                topTags.forEach(tag => {
-                    let badgeClass = 'bg-info text-dark';
-                    if (tag.type === 'fashion') {
-                        badgeClass = 'bg-warning text-dark';
-                    } else if (tag.type === 'color') {
-                        badgeClass = 'bg-success text-white';
-                    }
-                    
-                    badges.push(`<span class='badge ${badgeClass} mt-1 me-1' title="Confidence: ${Math.round(tag.confidence * 100)}%">${escapeHtml(tag.name)}</span>`);
-                });
-                
-                badgeHtml = badges.join('');
-            } else {
-                badgeHtml = `<span class='badge bg-secondary mt-1'>No tags</span>`;
-            }
+        let tagsBtnHtml = '';
+        // Always show Tags button if we have tagging results for this image
+        if (window.imageTaggingResults && window.imageTaggingResults[file.id]) {
+            tagsBtnHtml = `<button type='button' class='btn btn-sm btn-info position-absolute bottom-0 start-50 translate-middle-x mb-1 tags-btn' data-image-id='${file.id}' onclick='showTagsModal(${file.id})'>Tags</button>`;
         }
         box.innerHTML = `
             <img src='${url}' alt='Product ${idx+1}' style='max-width:100%; max-height:100px;' />
             <button type='button' class='btn btn-sm btn-danger position-absolute top-0 end-0 m-1' style='z-index:2;' onclick='removeImage(${idx})'>&times;</button>
-            ${badgeHtml}
+            ${tagsBtnHtml}
         `;
         grid.appendChild(box);
     });
-    // Add "+" box only if not tagging and not in sorting mode
-    if (!showTags && !(window.imageTaggingResults && Object.keys(window.imageTaggingResults).length)) {
+    // Add "+" box only if not in tagging mode
+    if (!(window.imageTaggingResults && Object.keys(window.imageTaggingResults).length)) {
         const plusBox = document.createElement('div');
         plusBox.className = 'border rounded p-2';
         plusBox.style.width = '110px';
@@ -311,10 +284,10 @@ function renderImagePreviews(showTags = false) {
         grid.appendChild(plusBox);
     }
     document.getElementById('upload-images-btn').style.display = window.selectedImages.length ? 'inline-block' : 'none';
-    // Show Reset button if tagging/sorting is active
+    // Show Reset button if tagging is active
     const resetBtn = document.getElementById('reset-order-btn');
     if (resetBtn) {
-        resetBtn.style.display = (showTags || (window.imageTaggingResults && Object.keys(window.imageTaggingResults).length)) ? 'inline-block' : 'none';
+        resetBtn.style.display = (window.imageTaggingResults && Object.keys(window.imageTaggingResults).length) ? 'inline-block' : 'none';
     }
 }
 window.removeImage = function(idx) {
@@ -526,8 +499,8 @@ window.tagBatchImages = function() {
             const successCount = Object.keys(window.imageTaggingResults).length;
             if (successCount > 0) {
                 alert(`Image tagging complete! Successfully tagged ${successCount} images. You can now view the tags for each image.`);
-            // Refresh the image preview to show tags
-            renderImagePreviews(true);
+                // Refresh the image preview to show Tags buttons
+                renderImagePreviews();
             } else {
                 alert('Image tagging completed but no tags were generated. This might be due to API limitations or image content.');
             }
@@ -601,7 +574,7 @@ window.tagProductImages = function() {
                     } else {
                         alert('Image tagging completed but no tags were generated. This might be due to API limitations or image content.');
                     }
-                    renderImagePreviews(true);
+                    renderImagePreviews();
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }
@@ -789,8 +762,8 @@ window.sortByStyle = function() {
     document.getElementById('sort-status-text').textContent = 'Images sorted by primary tag';
     document.getElementById('sort-status').style.display = 'block';
     
-    // Re-render with tags
-    renderImagePreviews(true);
+    // Re-render
+    renderImagePreviews();
 }
 window.sortByCategoryAndStyle = function() {
     if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
@@ -827,8 +800,8 @@ window.sortByCategoryAndStyle = function() {
     document.getElementById('sort-status-text').textContent = 'Images sorted by tag type and name';
     document.getElementById('sort-status').style.display = 'block';
     
-    // Re-render with tags
-    renderImagePreviews(true);
+    // Re-render
+    renderImagePreviews();
 }
 window.tagProductCategory = function() {
     if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
@@ -836,8 +809,8 @@ window.tagProductCategory = function() {
     }
     const batch = window.getCurrentUploadBatch();
     if (!batch.length) return alert('No images in current batch.');
-    // Show tags for current batch
-    renderImagePreviews(true);
+    // Show current batch
+    renderImagePreviews();
 }
 window.organizeByStyle = function() {
     if (!window.imageTaggingResults || !Object.keys(window.imageTaggingResults).length) {
@@ -872,6 +845,182 @@ fetch('/api/ai-chat/clear', {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
     }
 });
+
+// --- Tags Modal Functions ---
+window.currentEditingImageId = null;
+window.currentEditingTags = null;
+
+window.showTagsModal = function(imageId) {
+    window.currentEditingImageId = imageId;
+    const tags = window.imageTaggingResults[imageId];
+    if (!tags) {
+        alert('No tags found for this image.');
+        return;
+    }
+    
+    // Store original tags for comparison
+    window.currentEditingTags = JSON.parse(JSON.stringify(tags));
+    
+    // Load Google Vision tags
+    const googleVisionDiv = document.getElementById('googleVisionTags');
+    googleVisionDiv.innerHTML = '';
+    
+    if (tags.google_vision && tags.google_vision.length > 0) {
+        tags.google_vision.forEach((tag, index) => {
+            const tagElement = createEditableTagElement(tag.name, tag.confidence, tag.type, 'google_vision', index);
+            googleVisionDiv.appendChild(tagElement);
+        });
+    } else {
+        googleVisionDiv.innerHTML = '<p class="text-muted">No Google Vision tags available</p>';
+    }
+    
+    // Load OpenAI tags
+    const openaiDiv = document.getElementById('openaiTags');
+    openaiDiv.innerHTML = '';
+    
+    if (tags.openai && tags.openai.length > 0) {
+        tags.openai.forEach((tag, index) => {
+            const tagElement = createEditableTagElement(tag.name, tag.confidence, tag.type, 'openai', index);
+            openaiDiv.appendChild(tagElement);
+        });
+    } else {
+        openaiDiv.innerHTML = '<p class="text-muted">No OpenAI tags available</p>';
+    }
+    
+    // Load custom tags
+    const customTagsDiv = document.getElementById('customTags');
+    customTagsDiv.innerHTML = '';
+    
+    if (tags.custom && tags.custom.length > 0) {
+        tags.custom.forEach((tag, index) => {
+            const tagElement = createCustomTagElement(tag, index);
+            customTagsDiv.appendChild(tagElement);
+        });
+    }
+    
+    // Clear custom tag input
+    document.getElementById('customTagInput').value = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('tagsModal'));
+    modal.show();
+}
+
+function createEditableTagElement(tagName, confidence, type, source, index) {
+    const div = document.createElement('div');
+    div.className = 'd-flex align-items-center mb-2 p-2 border rounded';
+    div.style.backgroundColor = '#f8f9fa';
+    
+    const badgeClass = type === 'fashion' ? 'bg-warning text-dark' : 
+                      type === 'color' ? 'bg-success text-white' : 'bg-info text-dark';
+    
+    div.innerHTML = `
+        <span class="badge ${badgeClass} me-2">${escapeHtml(tagName)}</span>
+        <small class="text-muted me-2">${Math.round(confidence * 100)}%</small>
+        <input type="text" class="form-control form-control-sm me-2" value="${escapeHtml(tagName)}" 
+               onchange="updateTag('${source}', ${index}, this.value)">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeTag('${source}', ${index})">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    
+    return div;
+}
+
+function createCustomTagElement(tagName, index) {
+    const div = document.createElement('div');
+    div.className = 'd-flex align-items-center';
+    
+    div.innerHTML = `
+        <span class="badge bg-secondary me-2">${escapeHtml(tagName)}</span>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeCustomTag(${index})">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    
+    return div;
+}
+
+window.updateTag = function(source, index, newValue) {
+    if (!window.currentEditingTags[source]) return;
+    
+    if (newValue.trim()) {
+        window.currentEditingTags[source][index].name = newValue.trim();
+    }
+}
+
+window.removeTag = function(source, index) {
+    if (!window.currentEditingTags[source]) return;
+    
+    window.currentEditingTags[source].splice(index, 1);
+    // Re-render the section
+    showTagsModal(window.currentEditingImageId);
+}
+
+window.addCustomTag = function() {
+    const input = document.getElementById('customTagInput');
+    const tagName = input.value.trim();
+    
+    if (!tagName) return;
+    
+    if (!window.currentEditingTags.custom) {
+        window.currentEditingTags.custom = [];
+    }
+    
+    // Check if tag already exists
+    const allTags = [
+        ...(window.currentEditingTags.google_vision || []).map(t => t.name),
+        ...(window.currentEditingTags.openai || []).map(t => t.name),
+        ...(window.currentEditingTags.custom || [])
+    ];
+    
+    if (allTags.includes(tagName)) {
+        alert('This tag already exists.');
+        return;
+    }
+    
+    window.currentEditingTags.custom.push(tagName);
+    input.value = '';
+    
+    // Re-render custom tags section
+    const customTagsDiv = document.getElementById('customTags');
+    customTagsDiv.innerHTML = '';
+    
+    window.currentEditingTags.custom.forEach((tag, index) => {
+        const tagElement = createCustomTagElement(tag, index);
+        customTagsDiv.appendChild(tagElement);
+    });
+}
+
+window.removeCustomTag = function(index) {
+    if (!window.currentEditingTags.custom) return;
+    
+    window.currentEditingTags.custom.splice(index, 1);
+    
+    // Re-render custom tags section
+    const customTagsDiv = document.getElementById('customTags');
+    customTagsDiv.innerHTML = '';
+    
+    window.currentEditingTags.custom.forEach((tag, idx) => {
+        const tagElement = createCustomTagElement(tag, idx);
+        customTagsDiv.appendChild(tagElement);
+    });
+}
+
+window.saveTags = function() {
+    if (!window.currentEditingImageId || !window.currentEditingTags) return;
+    
+    // Update the global tagging results
+    window.imageTaggingResults[window.currentEditingImageId] = window.currentEditingTags;
+    
+    // Here you could also send the updated tags to the server
+    // For now, we'll just close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('tagsModal'));
+    modal.hide();
+    
+    // Show success message
+    alert('Tags updated successfully!');
+}
 
 // Category Modals and AJAX
 window.showAddMasterCategoryModal = function() {
@@ -1008,7 +1157,7 @@ window.resetImageOrder = function() {
     batch.files = batch.originalOrder.map(i => batch.files[i]).filter(Boolean);
     // Hide sorting status
     document.getElementById('sort-status').style.display = 'none';
-    renderImagePreviews(true);
+    renderImagePreviews();
 }
 
 // Master categories drag-and-drop
@@ -1209,7 +1358,7 @@ window.updateCategoryOrder = function(order, parentId) {
     margin-top: 0.125rem;
     will-change: transform; /* Optimize for animation */
 }
-    /* Make image boxes slightly taller to accommodate multiple badges */
+    /* Image box styling */
     #image-preview-grid .border.rounded {
         height: 150px !important;
     }
@@ -1245,6 +1394,26 @@ window.updateCategoryOrder = function(order, parentId) {
     .master-category-item {
     transform: none !important;
 }
+
+    /* Tags Modal Styling */
+    #tagsModal .modal-dialog {
+        max-width: 800px;
+    }
+    
+    #tagsModal .form-control-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    #tagsModal .badge {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    #customTags .badge {
+        background-color: #6c757d !important;
+        color: white !important;
+    }
 </style>
 
 <!-- Delete/Move Category Modal -->
@@ -1333,6 +1502,50 @@ window.updateCategoryOrder = function(order, parentId) {
           <button type="submit" class="btn btn-success">Add</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Tag Details Modal -->
+<div class="modal fade" id="tagsModal" tabindex="-1" aria-labelledby="tagsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tagsModalLabel">Edit Image Tags</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="tagsModalBody">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="text-primary">Google Vision Tags</h6>
+            <div id="googleVisionTags" class="mb-3">
+              <!-- Google Vision tags will be loaded here -->
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-success">OpenAI Tags</h6>
+            <div id="openaiTags" class="mb-3">
+              <!-- OpenAI tags will be loaded here -->
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-12">
+            <h6 class="text-info">Custom Tags</h6>
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" id="customTagInput" placeholder="Add custom tag...">
+              <button class="btn btn-outline-primary" type="button" onclick="addCustomTag()">Add</button>
+            </div>
+            <div id="customTags" class="d-flex flex-wrap gap-2">
+              <!-- Custom tags will be displayed here -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveTags()">Save Changes</button>
+      </div>
     </div>
   </div>
 </div>
