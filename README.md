@@ -1,119 +1,107 @@
-# 🛒 E-Shop – Modern Laravel E-Commerce Platform
+# 🛒 **E-Shop — Modern & Elegant E-Commerce Platform**
 
 <p align="center">
-  <a href="https://laravel.com" target="_blank">
-    <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="320" alt="Laravel Logo">
-  </a>
+  <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" width="120" alt="E-Shop Icon">
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Laravel-11.x-ff2d20?style=flat&logo=laravel&logoColor=white" alt="Laravel"></a>
-  <a href="#"><img src="https://img.shields.io/badge/PHP-%5E8.2-blue?style=flat&logo=php" alt="PHP"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=flat" alt="Status"></a>
-  <a href="https://github.com/your-github-username/eshop/stargazers"><img src="https://img.shields.io/github/stars/your-github-username/eshop?style=social" alt="GitHub stars"></a>
+  <b>A beautifully crafted, production-ready e-commerce platform with clean architecture, stunning UI, and a powerful admin dashboard.</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Active%20Development-00c853?style=flat-square">
+  <img src="https://img.shields.io/badge/Made%20for-Real%20Stores-2962ff?style=flat-square">
+  <img src="https://img.shields.io/badge/License-MIT-purple?style=flat-square">
 </p>
 
 ---
 
-## ✨ Overview
+## ✨ **What is E-Shop?**
 
-**E-Shop** is a modern, full-featured **Laravel e-commerce platform** with a clean UI and a production-ready architecture.
+**E-Shop** is a complete, modern e-commerce system designed for real online businesses.  
+It features:
 
-It includes:
+- Sleek, responsive storefront  
+- Full shopping cart + order system  
+- Admin dashboard to manage products, categories, and orders  
+- Secure checkout flow  
+- SEO-optimized page structure  
+- Clean backend architecture ready for scaling  
 
-- A beautiful, mobile-friendly storefront  
-- Powerful admin dashboard for managing products, categories, and orders  
-- Secure checkout with payment gateway integration  
-- API-ready backend so you can plug in mobile apps or SPA frontends later  
+This project is perfect for:
 
-Use it as:
-
-- A starting point for a real online store  
-- A base project for clients  
-- A learning resource for building serious Laravel apps  
-
----
-
-## 🚀 Features
-
-### 🛍️ Storefront
-
-- Responsive layout (desktop, tablet, mobile)
-- Product listing with:
-  - Category filtering
-  - Search
-  - Price & popularity sorting
-- Product details page:
-  - Gallery images
-  - Description & specs
-  - Stock status & pricing
-- Shopping cart:
-  - Add / remove / update quantity
-  - Subtotal, shipping, and total calculation
-  - Guest cart persisted via session
-
-### 🔐 Authentication & Accounts
-
-- User registration & login
-- Email verification ready
-- Password reset via email
-- Profile management (name, email, address)
-- Order history for each customer
-
-### 💳 Checkout & Payments
-
-- Shipping details & order review
-- Payment gateway integration (Stripe example wired in structure)
-- Order creation + status tracking (Pending, Paid, Shipped, Completed, Cancelled)
-- Email notification structure for order confirmation (hooks ready)
-
-### 🧑‍💻 Admin Panel
-
-- Secure admin login
-- Dashboard overview (orders, revenue, latest customers)
-- Category management (CRUD)
-- Product management:
-  - Title, description, price, stock, SKU
-  - Category assignment
-  - Image upload
-- Order management:
-  - View orders by status
-  - Update order status
-  - See order items & customer info
-
-### ⚙️ Tech Stack
-
-- **Backend:** Laravel 11+ (MVC, Eloquent ORM)
-- **Frontend:** Blade, TailwindCSS, Alpine.js
-- **Database:** MySQL / MariaDB / PostgreSQL
-- **Auth:** Laravel Breeze / built-in auth scaffolding (depending on your setup)
-- **Extras:** Laravel Debugbar (optional for local), Laravel IDE Helper (optional)
+- Freelancers building e-commerce for clients  
+- Agencies wanting a reusable template  
+- Students learning full-stack development  
+- Entrepreneurs launching an online store  
 
 ---
 
-## 🏗️ Project Structure (High Level)
+## 🌟 **Key Highlights**
 
-```text
-app/
-  Http/
-    Controllers/
-      Front/
-      Admin/
-    Middleware/
-  Models/
-bootstrap/
-config/
-database/
-  factories/
-  migrations/
-  seeders/
-public/
-resources/
-  views/
-    front/
-    admin/
-  css/
-  js/
-routes/
-  web.php
-  api.php
+### 🛍️ **Beautiful Storefront**
+- Fully responsive (mobile-first)
+- Clean product listing and grid layout
+- Product detail page with gallery, description, stock, and reviews
+- Category & search filtering
+- Smooth animations and modern UI elements
+
+### 🛒 **Powerful Cart & Checkout**
+- Persistent shopping cart
+- Add/remove/update quantity
+- Order summary with shipping & tax logic
+- Payment gateway ready (Stripe/PayPal integration structure)
+- Order confirmation + tracking
+
+### 🧑‍💼 **Admin Dashboard**
+- Intuitive UI for managing store data
+- Product CRUD with image upload
+- Category management
+- Order management with status timeline
+- Customer list + order history
+- Analytics-ready dashboard (visits, orders, revenue hooks)
+
+### 🔒 **Authentication System**
+- Registration & login
+- Email verification (optional)
+- Reset password flow
+- Profile management
+
+### ⚙️ **Clean Architecture**
+- Organized MVC structure
+- Reusable components
+- API-ready routes
+- Scalable database schema
+- Best practices for performance & security
+
+---
+
+## 📸 **Screenshots**
+
+> Add your actual images into `public/screenshots/` and update these paths.
+
+<p align="center">
+  <img src="public/screenshots/store-home.png" width="700" alt="Storefront Home">
+</p>
+
+<p align="center">
+  <img src="public/screenshots/product-page.png" width="700" alt="Product Page">
+</p>
+
+<p align="center">
+  <img src="public/screenshots/cart.png" width="700" alt="Shopping Cart">
+</p>
+
+<p align="center">
+  <img src="public/screenshots/admin-dashboard.png" width="700" alt="Admin Dashboard">
+</p>
+
+---
+
+## 🏗️ **Installation Guide**
+
+### 1️⃣ Clone the project
+
+```bash
+git clone https://github.com/your-username/eshop.git
+cd eshop
